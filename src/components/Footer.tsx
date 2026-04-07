@@ -76,7 +76,9 @@ export function Footer() {
             </p>
             <div className="flex gap-3 mt-6">
               <a
-                href="#"
+                href="https://www.instagram.com/proclaimingpraise"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold/20 hover:text-gold transition-colors"
                 aria-label="Instagram"
               >

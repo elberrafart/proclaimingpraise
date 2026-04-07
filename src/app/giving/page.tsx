@@ -1,8 +1,9 @@
-import { Heart, Shield, CreditCard, Repeat } from "lucide-react";
+import { Heart, Shield, Lightbulb, Receipt } from "lucide-react";
 
 export const metadata = {
   title: "Online Giving | Proclaiming Praise",
-  description: "Support the mission of Proclaiming Praise through your generous online donations.",
+  description:
+    "Support the mission of Proclaiming Praise. All donations are tax-deductible. EIN: 33-4660474.",
 };
 
 export default function GivingPage() {
@@ -25,68 +26,121 @@ export default function GivingPage() {
             Partner With Us
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-5xl md:text-6xl text-white mb-6">
-            Online Giving
+            Your Gift Makes a Way
           </h1>
-          <p className="text-white/60 text-lg max-w-2xl mx-auto">
-            Your generosity fuels our mission. Every gift helps us create more
-            opportunities for people to encounter God through praise and worship.
-          </p>
+          <div className="text-white/60 text-lg max-w-2xl mx-auto space-y-2">
+            <p>Proclaiming Praise is a 501(c)(3) nonprofit organization.</p>
+            <p>All donations are tax-deductible.</p>
+            <p className="text-white/40 text-base">EIN: 33-4660474</p>
+          </div>
         </div>
       </section>
 
-      {/* Giving Options */}
+      {/* Zeffy Embed */}
       <section className="bg-warm-white py-24">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          {/* Giving CTA Card */}
-          <div className="bg-white rounded-3xl shadow-xl shadow-black/5 p-10 md:p-14 text-center mb-16">
-            <Heart className="w-12 h-12 text-gold mx-auto mb-6" />
-            <h2 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl text-charcoal mb-4">
-              Make a Difference Today
-            </h2>
-            <p className="text-charcoal/60 max-w-lg mx-auto mb-8 text-lg">
-              As a 501(c)(3) non-profit, all donations to Proclaiming Praise are
-              tax-deductible. Your giving directly supports worship events,
-              community outreach, and ministry resources.
-            </p>
+        <div className="max-w-3xl mx-auto px-6 lg:px-8">
+          <div className="bg-white rounded-3xl shadow-xl shadow-black/5 overflow-hidden">
+            <div className="p-8 md:p-10 text-center">
+              <Heart className="w-10 h-10 text-gold mx-auto mb-4" />
+              <h2 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl text-charcoal mb-2">
+                Proclaiming Praise Donations 2026
+              </h2>
+              <p className="text-charcoal/60 mb-1">
+                Be Part of the Praise Movement
+              </p>
+              <p className="text-charcoal/50 text-sm mb-8">
+                Help us advance the kingdom of heaven, one praise at a time!
+              </p>
 
-            {/* Placeholder amounts */}
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              {["$25", "$50", "$100", "$250", "Other"].map((amount) => (
-                <button
-                  key={amount}
-                  className="px-6 py-3 rounded-full border-2 border-gold/30 text-charcoal font-semibold hover:bg-gold hover:text-deep-black hover:border-gold transition-all"
-                >
-                  {amount}
-                </button>
-              ))}
+              {/* Zeffy Donation iframe */}
+              <div className="rounded-2xl overflow-hidden border border-warm-gray">
+                <iframe
+                  title="Donation form powered by Zeffy"
+                  src="https://www.zeffy.com/en-US/embed/donation-form/proclaiming-praise-donations-2026"
+                  style={{ width: "100%", minHeight: "700px", border: "none" }}
+                  allow="payment"
+                />
+              </div>
+
+              <p className="text-charcoal/40 text-xs mt-6">
+                Powered by Zeffy — 100% of your donation goes to our mission.
+              </p>
             </div>
-
-            <button className="px-10 py-4 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:scale-105 text-lg">
-              Give Now
-            </button>
-
-            <p className="text-charcoal/40 text-sm mt-6">
-              You will be redirected to our secure payment processor.
-            </p>
           </div>
+        </div>
+      </section>
 
-          {/* Trust Signals */}
+      {/* Impact Section */}
+      <section className="bg-deep-black py-24">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
+          <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-white mb-6">
+            The Impact of Your Generosity
+          </h2>
+          <p className="text-gold/80 text-lg mb-2">
+            Proclaiming Praise is a movement that operates through generous
+            giving.
+          </p>
+          <p className="text-white/50 mb-4">
+            These are the three categories of funds that your gift will supply.
+          </p>
+          <p className="text-white/40 mb-16">
+            Thank you for considering to partner with us!
+          </p>
+
+          <div className="grid sm:grid-cols-3 gap-8">
+            {[
+              {
+                icon: "🎵",
+                title: "Worship Events",
+                text: "Equipment, venues, and production for worship gatherings — from sunset praises to young adult nights.",
+              },
+              {
+                icon: "🤝",
+                title: "Community Outreach",
+                text: "Personal praise moments in homes, hospitals, and celebrations — meeting people where they are.",
+              },
+              {
+                icon: "📖",
+                title: "Ministry Resources",
+                text: "Expanding our reach through media, materials, and tools to mobilize worship across communities.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="p-8 rounded-2xl bg-white/5 border border-white/10"
+              >
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-white font-semibold text-lg mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  {item.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Signals */}
+      <section className="bg-warm-white py-16">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="grid sm:grid-cols-3 gap-8">
             {[
               {
                 icon: Shield,
                 title: "Secure & Safe",
-                text: "All transactions are encrypted and processed through trusted payment providers.",
+                text: "All transactions are encrypted and processed through Zeffy's trusted platform.",
               },
               {
-                icon: CreditCard,
+                icon: Receipt,
                 title: "Tax Deductible",
-                text: "Proclaiming Praise is a registered 501(c)(3). You'll receive a receipt for your records.",
+                text: "You'll receive a tax receipt for every donation. EIN: 33-4660474.",
               },
               {
-                icon: Repeat,
-                title: "Recurring Giving",
-                text: "Set up automatic monthly giving to provide consistent support for our ministry.",
+                icon: Lightbulb,
+                title: "100% Goes to Mission",
+                text: "We fundraise with Zeffy to ensure 100% of your donation goes to our mission.",
               },
             ].map((item) => (
               <div key={item.title} className="text-center">

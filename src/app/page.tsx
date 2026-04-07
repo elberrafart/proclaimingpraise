@@ -144,8 +144,9 @@ export default function Home() {
               What We&apos;re About
             </h2>
             <p className="text-charcoal/60 max-w-2xl mx-auto text-lg">
-              We exist to create spaces where people can encounter God through
-              worship, community, and proclamation.
+              We are a Holy Spirit led ministry creating intentional spaces where
+              worship exists beyond stages — into homes, hospitals, communities,
+              and everyday moments.
             </p>
           </div>
 

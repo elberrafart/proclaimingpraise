@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Cross, Mail, MapPin } from "lucide-react";
+import { NewsletterForm } from "@/components/NewsletterForm";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -41,19 +42,7 @@ export function Footer() {
             Join our community and never miss a worship event, praise gathering,
             or opportunity to connect.
           </p>
-          <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-5 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
-            />
-            <button
-              type="submit"
-              className="px-8 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-colors whitespace-nowrap"
-            >
-              Subscribe
-            </button>
-          </form>
+          <NewsletterForm />
         </div>
       </div>
 

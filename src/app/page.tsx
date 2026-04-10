@@ -9,15 +9,32 @@ import {
   Music,
   HandHeart,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+
+  const [{ data: featuredEvent }, { data: praiseReports }] = await Promise.all([
+    supabase
+      .from("events")
+      .select("*")
+      .eq("featured", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("praise_reports")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false })
+      .limit(3),
+  ]);
+
   return (
     <>
       {/* ─── Hero ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background with gradient overlay */}
         <div className="absolute inset-0 bg-deep-black">
-          {/* Placeholder for worship background image — replace src with actual photo */}
           <div
             className="absolute inset-0 opacity-40"
             style={{
@@ -58,7 +75,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1.5">
             <div className="w-1.5 h-3 bg-gold rounded-full" />
@@ -78,58 +94,76 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 overflow-hidden">
-            <div className="grid md:grid-cols-2">
-              {/* Event Image */}
-              <div className="relative h-64 md:h-auto min-h-[320px]">
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
-                  Upcoming
-                </div>
-              </div>
-
-              {/* Event Details */}
-              <div className="p-8 md:p-10 flex flex-col justify-center">
-                <h3 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-6">
-                  Public Praise
-                  <br />
-                  Salt Creek Sunset
-                </h3>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <MapPin className="w-5 h-5 text-gold shrink-0" />
-                    <span>Salt Creek Bluff Park, CA</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <Calendar className="w-5 h-5 text-gold shrink-0" />
-                    <span>April 18, 2026</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <Clock className="w-5 h-5 text-gold shrink-0" />
-                    <span>6:00 PM</span>
+          {featuredEvent ? (
+            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 overflow-hidden">
+              <div className="grid md:grid-cols-2">
+                <div className="relative h-64 md:h-auto min-h-[320px]">
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: featuredEvent.image_url
+                        ? `url('${featuredEvent.image_url}')`
+                        : "linear-gradient(135deg, #1a1a1a, #2a2a2a)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
+                    Upcoming
                   </div>
                 </div>
 
-                <Link
-                  href="/events"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
-                >
-                  Register Now
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="p-8 md:p-10 flex flex-col justify-center">
+                  <h3 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-6">
+                    {featuredEvent.title}
+                  </h3>
+
+                  {featuredEvent.description && (
+                    <p className="text-charcoal/60 leading-relaxed mb-6 text-sm">
+                      {featuredEvent.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <MapPin className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <Calendar className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.date}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <Clock className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.time}</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/events"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
+                  >
+                    See All Events
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 p-16 text-center">
+              <p className="text-charcoal/50 mb-6">
+                No upcoming events at the moment — check back soon!
+              </p>
+              <Link
+                href="/events"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all"
+              >
+                View Events Page
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -145,7 +179,7 @@ export default function Home() {
             </h2>
             <p className="text-charcoal/60 max-w-2xl mx-auto text-lg">
               We are a Holy Spirit led ministry creating intentional spaces where
-              worship exists beyond stages — into homes, hospitals, communities,
+              worship exists beyond stages into homes, hospitals, communities,
               and everyday moments.
             </p>
           </div>
@@ -237,71 +271,54 @@ export default function Home() {
       </section>
 
       {/* ─── Praise Reports Preview ─── */}
-      <section className="bg-warm-white py-24 lg:py-32">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
-              Testimonies
-            </p>
-            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal">
-              Praise Reports
-            </h2>
-          </div>
+      {praiseReports && praiseReports.length > 0 && (
+        <section className="bg-warm-white py-24 lg:py-32">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
+                Testimonies
+              </p>
+              <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal">
+                Praise Reports
+              </h2>
+            </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                quote:
-                  "The Salt Creek sunset praise was one of the most powerful worship experiences of my life. God showed up in such a real way.",
-                name: "Sarah M.",
-                role: "Worship Attendee",
-              },
-              {
-                quote:
-                  "Proclaiming Praise has given me a community where I can grow in my faith and use my gifts to serve others.",
-                name: "David R.",
-                role: "Worship Warrior",
-              },
-              {
-                quote:
-                  "I love how this ministry takes worship outside the four walls. It's changing lives and transforming hearts.",
-                name: "Maria L.",
-                role: "Volunteer",
-              },
-            ].map((report) => (
-              <div
-                key={report.name}
-                className="bg-white p-8 rounded-2xl shadow-sm"
+            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {praiseReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="bg-white p-8 rounded-2xl shadow-sm"
+                >
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className="text-gold text-lg">
+                        &#9733;
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-charcoal/70 leading-relaxed mb-6 italic">
+                    &ldquo;{report.quote}&rdquo;
+                  </p>
+                  <div>
+                    <p className="font-semibold text-charcoal">{report.name}</p>
+                    <p className="text-sm text-charcoal/50">{report.role}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-12">
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
               >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-gold text-lg">
-                      &#9733;
-                    </span>
-                  ))}
-                </div>
-                <p className="text-charcoal/70 leading-relaxed mb-6 italic">
-                  &ldquo;{report.quote}&rdquo;
-                </p>
-                <div>
-                  <p className="font-semibold text-charcoal">{report.name}</p>
-                  <p className="text-sm text-charcoal/50">{report.role}</p>
-                </div>
-              </div>
-            ))}
+                Share Your Story
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
-
-          <div className="text-center mt-12">
-            <Link
-              href="/praise-reports"
-              className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
-            >
-              Read More Stories
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 }

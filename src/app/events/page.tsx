@@ -1,35 +1,21 @@
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Events | Proclaiming Praise",
-  description: "Join us at our upcoming worship events and praise gatherings across Southern California.",
+  description:
+    "Join us at our upcoming worship events and praise gatherings across Southern California.",
 };
 
-const events = [
-  {
-    title: "Public Praise Salt Creek Sunset",
-    location: "Salt Creek Bluff Park, CA",
-    date: "April 18, 2026",
-    time: "6:00 PM",
-    description:
-      "Join us for a powerful evening of worship overlooking the Pacific Ocean as the sun sets. Bring a blanket, invite a friend, and come ready to praise.",
-    featured: true,
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
-  },
-  {
-    title: "Community Worship Night",
-    location: "Southern California",
-    date: "Coming Soon",
-    time: "TBA",
-    description:
-      "An evening of intimate worship, prayer, and fellowship. Stay tuned for location details.",
-    featured: false,
-    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-  },
-];
+export default async function EventsPage() {
+  const supabase = await createClient();
+  const { data: events } = await supabase
+    .from("events")
+    .select("*")
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: true });
 
-export default function EventsPage() {
   return (
     <>
       {/* Hero */}
@@ -52,59 +38,69 @@ export default function EventsPage() {
       {/* Events List */}
       <section className="bg-warm-white py-24">
         <div className="max-w-5xl mx-auto px-6 lg:px-8 space-y-8">
-          {events.map((event) => (
-            <div
-              key={event.title}
-              className="bg-white rounded-3xl shadow-sm overflow-hidden"
-            >
-              <div className="grid md:grid-cols-5">
-                <div
-                  className="md:col-span-2 h-64 md:h-auto min-h-[250px] relative"
-                  style={{
-                    backgroundImage: `url('${event.image}')`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  {event.featured && (
-                    <div className="absolute top-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
-                      Featured
-                    </div>
-                  )}
-                </div>
-                <div className="md:col-span-3 p-8 md:p-10 flex flex-col justify-center">
-                  <h2 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-4">
-                    {event.title}
-                  </h2>
-                  <p className="text-charcoal/60 mb-6 leading-relaxed">
-                    {event.description}
-                  </p>
-                  <div className="flex flex-wrap gap-4 mb-8 text-sm text-charcoal/70">
-                    <span className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gold" />
-                      {event.location}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gold" />
-                      {event.date}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gold" />
-                      {event.time}
-                    </span>
+          {!events?.length ? (
+            <p className="text-center text-charcoal/50 py-20">
+              No upcoming events right now — check back soon!
+            </p>
+          ) : (
+            events.map((event) => (
+              <div
+                key={event.id}
+                className="bg-white rounded-3xl shadow-sm overflow-hidden"
+              >
+                <div className="grid md:grid-cols-5">
+                  <div
+                    className="md:col-span-2 h-64 md:h-auto min-h-[250px] relative"
+                    style={{
+                      backgroundImage: event.image_url
+                        ? `url('${event.image_url}')`
+                        : "linear-gradient(135deg, #1a1a1a, #2a2a2a)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  >
+                    {event.featured && (
+                      <div className="absolute top-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
+                        Featured
+                      </div>
+                    )}
                   </div>
-                  {event.featured && (
-                    <Link
-                      href="#"
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
-                    >
-                      Register Now <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  )}
+                  <div className="md:col-span-3 p-8 md:p-10 flex flex-col justify-center">
+                    <h2 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-4">
+                      {event.title}
+                    </h2>
+                    {event.description && (
+                      <p className="text-charcoal/60 mb-6 leading-relaxed">
+                        {event.description}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-4 mb-8 text-sm text-charcoal/70">
+                      <span className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gold" />
+                        {event.location}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gold" />
+                        {event.date}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gold" />
+                        {event.time}
+                      </span>
+                    </div>
+                    {event.featured && (
+                      <Link
+                        href="/contact"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
+                      >
+                        I&apos;ll Be There <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
     </>

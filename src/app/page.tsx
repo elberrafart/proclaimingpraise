@@ -10,6 +10,7 @@ import {
   HandHeart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { PraiseReportsGrid } from "@/components/PraiseReportsGrid";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -283,36 +284,16 @@ export default async function Home() {
               </h2>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {praiseReports.map((report) => (
-                <div
-                  key={report.id}
-                  className="bg-white p-8 rounded-2xl shadow-sm"
-                >
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="text-gold text-lg">
-                        &#9733;
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-charcoal/70 leading-relaxed mb-6 italic">
-                    &ldquo;{report.quote}&rdquo;
-                  </p>
-                  <div>
-                    <p className="font-semibold text-charcoal">{report.name}</p>
-                    <p className="text-sm text-charcoal/50">{report.role}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="max-w-5xl mx-auto">
+              <PraiseReportsGrid reports={praiseReports} />
             </div>
 
             <div className="text-center mt-12">
               <Link
-                href="/contact"
+                href="/praise-reports"
                 className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
               >
-                Share Your Story
+                Read More Stories
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

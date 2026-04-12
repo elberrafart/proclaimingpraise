@@ -1,5 +1,6 @@
 -- ============================================================
 -- Proclaiming Praise – Supabase Schema
+-- Safe to run multiple times (idempotent)
 -- ============================================================
 
 -- Events
@@ -60,32 +61,70 @@ alter table worship_requests enable row level security;
 alter table newsletter_subscribers enable row level security;
 alter table praise_reports enable row level security;
 
--- Events: anyone can read, only authenticated admins can write
-create policy "Public read events" on events for select using (true);
-create policy "Auth insert events" on events for insert with check (auth.role() = 'authenticated');
-create policy "Auth update events" on events for update using (auth.role() = 'authenticated');
-create policy "Auth delete events" on events for delete using (auth.role() = 'authenticated');
+-- Events
+drop policy if exists "Public read events" on events;
+drop policy if exists "Auth insert events" on events;
+drop policy if exists "Auth update events" on events;
+drop policy if exists "Auth delete events" on events;
+create policy "Public read events"   on events for select using (true);
+create policy "Auth insert events"   on events for insert with check (auth.role() = 'authenticated');
+create policy "Auth update events"   on events for update using (auth.role() = 'authenticated');
+create policy "Auth delete events"   on events for delete using (auth.role() = 'authenticated');
 
--- Worship requests: only authenticated can read/write (private submissions)
-create policy "Auth all worship_requests" on worship_requests using (auth.role() = 'authenticated');
+-- Worship requests
+drop policy if exists "Auth all worship_requests"    on worship_requests;
+drop policy if exists "Anyone insert worship_requests" on worship_requests;
+create policy "Auth all worship_requests"      on worship_requests using (auth.role() = 'authenticated');
 create policy "Anyone insert worship_requests" on worship_requests for insert with check (true);
 
--- Newsletter: anyone can subscribe, only authenticated can read/delete
+-- Newsletter
+drop policy if exists "Anyone insert newsletter" on newsletter_subscribers;
+drop policy if exists "Auth read newsletter"     on newsletter_subscribers;
+drop policy if exists "Auth delete newsletter"   on newsletter_subscribers;
 create policy "Anyone insert newsletter" on newsletter_subscribers for insert with check (true);
-create policy "Auth read newsletter" on newsletter_subscribers for select using (auth.role() = 'authenticated');
-create policy "Auth delete newsletter" on newsletter_subscribers for delete using (auth.role() = 'authenticated');
+create policy "Auth read newsletter"     on newsletter_subscribers for select using (auth.role() = 'authenticated');
+create policy "Auth delete newsletter"   on newsletter_subscribers for delete using (auth.role() = 'authenticated');
 
--- Praise reports: published ones are public, authenticated can do everything
-create policy "Public read published praise_reports" on praise_reports for select using (published = true or auth.role() = 'authenticated');
-create policy "Auth insert praise_reports" on praise_reports for insert with check (auth.role() = 'authenticated');
-create policy "Auth update praise_reports" on praise_reports for update using (auth.role() = 'authenticated');
-create policy "Auth delete praise_reports" on praise_reports for delete using (auth.role() = 'authenticated');
+-- Praise reports
+drop policy if exists "Public read published praise_reports" on praise_reports;
+drop policy if exists "Auth insert praise_reports"           on praise_reports;
+drop policy if exists "Public insert praise_reports"         on praise_reports;
+drop policy if exists "Auth update praise_reports"           on praise_reports;
+drop policy if exists "Auth delete praise_reports"           on praise_reports;
+create policy "Public read published praise_reports"
+  on praise_reports for select using (published = true or auth.role() = 'authenticated');
+create policy "Public insert praise_reports"
+  on praise_reports for insert with check (published = false);
+create policy "Auth update praise_reports"
+  on praise_reports for update using (auth.role() = 'authenticated');
+create policy "Auth delete praise_reports"
+  on praise_reports for delete using (auth.role() = 'authenticated');
 
 -- ============================================================
--- Seed: migrate existing hardcoded event
+-- Storage: event image uploads
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('event-images', 'event-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Public read event-images"  on storage.objects;
+drop policy if exists "Auth upload event-images"  on storage.objects;
+drop policy if exists "Auth delete event-images"  on storage.objects;
+create policy "Public read event-images"
+  on storage.objects for select using (bucket_id = 'event-images');
+create policy "Auth upload event-images"
+  on storage.objects for insert
+  with check (bucket_id = 'event-images' and auth.role() = 'authenticated');
+create policy "Auth delete event-images"
+  on storage.objects for delete
+  using (bucket_id = 'event-images' and auth.role() = 'authenticated');
+
+-- ============================================================
+-- Seed: initial event and praise reports
+-- Skipped if the tables already have data
 -- ============================================================
 insert into events (title, location, date, time, description, image_url, featured)
-values (
+select
   'Public Praise Salt Creek Sunset',
   'Salt Creek Bluff Park, CA',
   'April 18, 2026',
@@ -93,10 +132,12 @@ values (
   'Join us for a powerful evening of worship overlooking the Pacific Ocean as the sun sets. Bring a blanket, invite a friend, and come ready to praise.',
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80',
   true
-);
+where not exists (select 1 from events);
 
--- Seed: migrate existing praise reports
-insert into praise_reports (quote, name, role, published) values
+insert into praise_reports (quote, name, role, published)
+select * from (values
   ('The Salt Creek sunset praise was one of the most powerful worship experiences of my life. God showed up in such a real way.', 'Sarah M.', 'Worship Attendee', true),
   ('Proclaiming Praise has given me a community where I can grow in my faith and use my gifts to serve others.', 'David R.', 'Worship Warrior', true),
-  ('I love how this ministry takes worship outside the four walls. It''s changing lives and transforming hearts.', 'Maria L.', 'Volunteer', true);
+  ('I love how this ministry takes worship outside the four walls. It''s changing lives and transforming hearts.', 'Maria L.', 'Volunteer', true)
+) as v(quote, name, role, published)
+where not exists (select 1 from praise_reports);

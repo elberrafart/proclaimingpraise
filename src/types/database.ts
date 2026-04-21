@@ -37,6 +37,33 @@ export type NewsletterSubscriberRow = {
   created_at: string;
 };
 
+export type VideoTestimonyRow = {
+  id: string;
+  title: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  description: string | null;
+  autoplay: boolean;
+  muted: boolean;
+  loop: boolean;
+  overlay_opacity: number;
+  published: boolean;
+  show_on_home: boolean;
+  show_on_videos: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
+export type InstagramPostRow = {
+  id: string;
+  instagram_id: string | null;
+  image_url: string;
+  post_url: string;
+  caption: string | null;
+  published: boolean;
+  created_at: string;
+};
+
 export type PraiseReportRow = {
   id: string;
   quote: string;
@@ -123,6 +150,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      video_testimonies: {
+        Row: VideoTestimonyRow;
+        Insert: {
+          id?: string;
+          title: string;
+          video_url: string;
+          thumbnail_url?: string | null;
+          description?: string | null;
+          autoplay?: boolean;
+          muted?: boolean;
+          loop?: boolean;
+          overlay_opacity?: number;
+          published?: boolean;
+          show_on_home?: boolean;
+          show_on_videos?: boolean;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          title?: string;
+          video_url?: string;
+          thumbnail_url?: string | null;
+          description?: string | null;
+          autoplay?: boolean;
+          muted?: boolean;
+          loop?: boolean;
+          overlay_opacity?: number;
+          published?: boolean;
+          show_on_home?: boolean;
+          show_on_videos?: boolean;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      instagram_posts: {
+        Row: InstagramPostRow;
+        Insert: {
+          id?: string;
+          instagram_id?: string | null;
+          image_url: string;
+          post_url: string;
+          caption?: string | null;
+          published?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          instagram_id?: string | null;
+          image_url?: string;
+          post_url?: string;
+          caption?: string | null;
+          published?: boolean;
+        };
+        Relationships: [];
+      };
       praise_reports: {
         Row: PraiseReportRow;
         Insert: {
@@ -152,3 +233,5 @@ export type Event = EventRow;
 export type WorshipRequest = WorshipRequestRow;
 export type NewsletterSubscriber = NewsletterSubscriberRow;
 export type PraiseReport = PraiseReportRow;
+export type VideoTestimony = VideoTestimonyRow;
+export type InstagramPost = InstagramPostRow;

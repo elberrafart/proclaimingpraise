@@ -1,0 +1,989 @@
+================================================================================
+  PROCLAIMING PRAISE — TECHNICAL DOCUMENTATION
+  Last updated: April 2026
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+  1. Project Overview
+  2. Technology Stack
+  3. Environment Variables
+  4. Project File Structure
+  5. Database Schema (Supabase)
+  6. Row Level Security (RLS) Policies
+  7. Storage Buckets
+  8. Public-Facing Pages
+  9. Admin Panel
+ 10. Server Actions
+ 11. API Routes
+ 12. Shared Components
+ 13. Authentication
+ 14. Instagram Integration
+ 15. Video System
+ 16. Styling and Design System
+ 17. Deployment (Vercel)
+ 18. Local Development Setup
+ 19. Common Operations Guide
+
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+Proclaiming Praise is a 501(c)(3) non-profit ministry website built to:
+  - Announce and manage upcoming worship events
+  - Accept worship / personal praise booking requests from the public
+  - Display a video testimonies carousel and dedicated videos page
+  - Show a curated Instagram feed (manually managed + optional auto-sync)
+  - Collect email newsletter subscribers
+  - Accept and publish praise reports / testimonials from the community
+  - Process online donations (Giving page)
+  - Provide a fully authenticated admin panel for all content management
+
+The site was rebuilt from scratch from the original Wix website to a modern
+stack using Next.js 16, Tailwind CSS v4, and Supabase as the backend.
+
+
+================================================================================
+2. TECHNOLOGY STACK
+================================================================================
+
+  Framework       : Next.js 16.2.2 (App Router, React Server Components)
+  UI Library      : React 19.2.4 with React DOM 19.2.4
+  Language        : TypeScript 5
+  Styling         : Tailwind CSS v4 (with PostCSS plugin @tailwindcss/postcss)
+  Database        : Supabase (PostgreSQL)
+  Auth            : Supabase Auth (email + password)
+  Storage         : Supabase Storage (two public buckets)
+  Icons           : lucide-react v1.7.0 + one custom SVG icon (InstagramIcon)
+  Fonts           : Google Fonts — Inter (body) + Playfair Display (headings)
+  Hosting         : Vercel (with Vercel Cron for Instagram auto-sync)
+
+Key package versions (from package.json):
+  next                 16.2.2
+  react                19.2.4
+  @supabase/ssr        ^0.10.2
+  @supabase/supabase-js ^2.103.0
+  lucide-react         ^1.7.0
+  tailwindcss          ^4
+  typescript           ^5
+
+
+================================================================================
+3. ENVIRONMENT VARIABLES
+================================================================================
+
+All environment variables must be added in:
+  - A local .env.local file for development
+  - The Vercel project dashboard for production
+
+Required variables:
+
+  NEXT_PUBLIC_SUPABASE_URL
+    The full URL of your Supabase project.
+    Example: https://abcdefgh.supabase.co
+    Where to find: Supabase Dashboard → Project Settings → API → Project URL
+
+  NEXT_PUBLIC_SUPABASE_ANON_KEY
+    The public (anon) API key for client-side Supabase access.
+    This key respects Row Level Security (RLS) policies.
+    Where to find: Supabase Dashboard → Project Settings → API → anon key
+
+  SUPABASE_SERVICE_ROLE_KEY
+    The secret service role key that BYPASSES RLS.
+    Used only server-side for the Instagram sync process.
+    NEVER expose this in client-side code.
+    Where to find: Supabase Dashboard → Project Settings → API → service_role key
+
+  INSTAGRAM_ACCESS_TOKEN
+    A long-lived Instagram Graph API access token (valid for ~60 days).
+    Required for the automatic Instagram feed sync feature.
+    See Section 14 for how to obtain this token.
+    Optional — the site works without it; Instagram feed is managed manually.
+
+  CRON_SECRET
+    A secret string used to authenticate Vercel Cron requests.
+    Set any random secure string (e.g. a UUID).
+    Vercel automatically passes this as: Authorization: Bearer {CRON_SECRET}
+    Required for the /api/sync-instagram cron job to work securely.
+
+
+================================================================================
+4. PROJECT FILE STRUCTURE
+================================================================================
+
+proclaimingpraise/
+├── supabase/
+│   └── schema.sql              ← Full idempotent DB schema (run in Supabase SQL Editor)
+├── vercel.json                 ← Vercel Cron job config
+├── next.config.ts              ← Next.js config (image remote patterns)
+├── package.json
+├── tsconfig.json
+├── src/
+│   ├── types/
+│   │   └── database.ts         ← All TypeScript types for DB rows + Supabase Database type
+│   ├── lib/
+│   │   ├── supabase/
+│   │   │   ├── client.ts       ← Browser-side Supabase client (respects RLS)
+│   │   │   ├── server.ts       ← Server-side Supabase client (uses cookie auth, respects RLS)
+│   │   │   └── service.ts      ← Service-role Supabase client (bypasses RLS — server only)
+│   │   ├── sync-instagram.ts   ← Shared Instagram Graph API sync logic
+│   │   └── utils.ts            ← General utility helpers
+│   ├── components/
+│   │   ├── Navbar.tsx           ← Fixed top navigation bar (client component)
+│   │   ├── Footer.tsx           ← Site footer
+│   │   ├── VideoCarousel.tsx    ← Interactive video carousel (client component)
+│   │   ├── PraiseReportsGrid.tsx← Testimonials grid display
+│   │   ├── NewsletterForm.tsx   ← Email signup form
+│   │   ├── icons/
+│   │   │   └── InstagramIcon.tsx← Custom SVG Instagram icon
+│   │   └── admin/
+│   │       └── AdminSidebar.tsx ← Admin panel left navigation
+│   ├── app/
+│   │   ├── layout.tsx           ← Root layout (fonts, metadata, Navbar, Footer)
+│   │   ├── globals.css          ← Tailwind v4 theme + custom animations + utilities
+│   │   ├── page.tsx             ← Homepage
+│   │   ├── about/page.tsx       ← About page
+│   │   ├── events/page.tsx      ← Public events listing
+│   │   ├── videos/page.tsx      ← Public video testimonies page
+│   │   ├── giving/page.tsx      ← Online giving / donation page
+│   │   ├── contact/page.tsx     ← Contact / worship request form
+│   │   ├── praise-reports/
+│   │   │   ├── page.tsx         ← Public praise reports listing
+│   │   │   └── submit/page.tsx  ← Public praise report submission form
+│   │   ├── actions/             ← Next.js Server Actions
+│   │   │   ├── auth.ts          ← login / logout
+│   │   │   ├── events.ts        ← createEvent / updateEvent / deleteEvent / toggleFeatured
+│   │   │   ├── worship-requests.ts ← submitWorshipRequest / updateRequestStatus
+│   │   │   ├── newsletter.ts    ← subscribeToNewsletter
+│   │   │   ├── praise-reports.ts← submitPraiseReport / updatePraiseReport / togglePublished / delete
+│   │   │   ├── videos.ts        ← createVideo / updateVideo / deleteVideo / toggleVideoPublished
+│   │   │   └── instagram.ts     ← createInstagramPost / updateInstagramPost / deleteInstagramPost
+│   │   │                           toggleInstagramPostPublished / syncInstagramNow
+│   │   ├── api/
+│   │   │   └── sync-instagram/
+│   │   │       └── route.ts     ← GET handler for Vercel Cron (daily Instagram sync)
+│   │   └── admin/
+│   │       ├── login/page.tsx   ← Admin login page (public)
+│   │       └── (protected)/     ← Route group — all require authentication
+│   │           ├── layout.tsx   ← Auth guard + AdminSidebar wrapper
+│   │           ├── page.tsx     ← Admin dashboard
+│   │           ├── events/
+│   │           │   ├── page.tsx
+│   │           │   └── EventsClient.tsx
+│   │           ├── worship-requests/page.tsx
+│   │           ├── newsletter/page.tsx
+│   │           ├── praise-reports/
+│   │           │   ├── page.tsx
+│   │           │   └── PraiseClient.tsx
+│   │           ├── videos/
+│   │           │   ├── page.tsx
+│   │           │   └── VideosClient.tsx
+│   │           └── instagram/
+│   │               ├── page.tsx
+│   │               └── InstagramClient.tsx
+│   └── proxy.ts
+
+
+================================================================================
+5. DATABASE SCHEMA (SUPABASE)
+================================================================================
+
+The full schema lives in supabase/schema.sql. It is IDEMPOTENT — meaning it is
+safe to run multiple times without duplicating data or breaking existing tables.
+Run it any time you add new columns or tables by pasting it into the Supabase
+SQL Editor and clicking "Run".
+
+--- TABLE: events ---
+Stores upcoming worship events shown on the homepage and /events page.
+
+  Column      Type        Notes
+  ----------  ----------  -----------------------------------------------
+  id          uuid        Primary key, auto-generated
+  title       text        Event name (required)
+  location    text        Venue / address (required)
+  date        text        Free-text date string, e.g. "April 18, 2026"
+  time        text        Free-text time string, e.g. "6:00 PM"
+  description text        Optional longer description
+  image_url   text        Optional image (can be Unsplash URL or Supabase Storage URL)
+  featured    boolean     If true, shown as "Next Event" on the homepage
+  created_at  timestamptz Auto-set on insert
+
+--- TABLE: worship_requests ---
+Stores booking / contact requests submitted via the /contact page form.
+
+  Column      Type        Notes
+  ----------  ----------  -----------------------------------------------
+  id          uuid        Primary key
+  name        text        Requester's full name
+  email       text        Contact email
+  phone       text        Contact phone number
+  city        text        Their city / location
+  purpose     text        Either 'high' (high-energy praise) or 'low' (intimate worship)
+  description text        What they need Proclaiming Praise for
+  event_month int         Optional: month of event (1–12)
+  event_day   int         Optional: day of event
+  event_year  int         Optional: year of event
+  event_time  text        Optional: time of event
+  date_tbd    boolean     True if date is not yet decided
+  status      text        Workflow status: 'new' | 'contacted' | 'completed'
+  created_at  timestamptz Auto-set on insert
+
+--- TABLE: newsletter_subscribers ---
+Stores email addresses from newsletter signups on the site.
+
+  Column      Type        Notes
+  ----------  ----------  -----------------------------------------------
+  id          uuid        Primary key
+  email       text        Unique email address
+  status      text        'active' or 'unsubscribed'
+  created_at  timestamptz Auto-set on insert
+
+--- TABLE: video_testimonies ---
+Stores videos shown on the homepage carousel and /videos page.
+
+  Column          Type        Notes
+  --------------  ----------  -----------------------------------------------
+  id              uuid        Primary key
+  title           text        Video title (required)
+  video_url       text        URL to video file in Supabase Storage or external CDN
+                              NOTE: YouTube URLs do NOT work — native <video> cannot
+                              play YouTube. Use direct MP4/WebM file URLs only.
+  thumbnail_url   text        Optional poster/thumbnail image URL
+  description     text        Optional description shown below the player
+  autoplay        boolean     If true, video plays automatically on page load (muted)
+  muted           boolean     If true, video starts muted (required for autoplay to work
+                              due to browser autoplay policies)
+  loop            boolean     If true, video loops continuously
+  overlay_opacity int         Darkness of overlay on top of video: 0 / 20 / 40 / 60 / 80
+                              (stored as integer percent, e.g. 40 = rgba(0,0,0,0.40))
+  published       boolean     Only published videos appear on the public site
+  sort_order      int         Lower numbers appear first (default 0)
+  created_at      timestamptz Auto-set on insert
+
+IMPORTANT: If you previously had a 'youtube_url' column from an older version of
+the schema, the schema.sql includes a migration block that automatically renames
+it to 'video_url'. Run schema.sql in Supabase to apply this migration.
+
+--- TABLE: instagram_posts ---
+Stores Instagram post images for the homepage Instagram feed.
+
+  Column        Type        Notes
+  ------------  ----------  -----------------------------------------------
+  id            uuid        Primary key
+  instagram_id  text        Unique — the Instagram post ID from the API.
+                            NULL for manually added posts.
+  image_url     text        Public URL to the post image (required)
+  post_url      text        Link to the Instagram post (required)
+  caption       text        Optional caption text shown on hover
+  published     boolean     Only published posts appear on the public site
+  created_at    timestamptz Auto-set on insert
+
+--- TABLE: praise_reports ---
+Stores testimonials / praise reports from community members.
+
+  Column      Type        Notes
+  ----------  ----------  -----------------------------------------------
+  id          uuid        Primary key
+  quote       text        The testimonial text (required)
+  name        text        Submitter's name (required)
+  role        text        Their role / label, e.g. "Worship Attendee" (required)
+  published   boolean     Must be manually approved in admin before showing publicly.
+                          Default is false — submissions start unpublished.
+  created_at  timestamptz Auto-set on insert
+
+
+================================================================================
+6. ROW LEVEL SECURITY (RLS) POLICIES
+================================================================================
+
+All tables have RLS enabled. The rules are:
+
+  events
+    - Anyone can READ events (public select)
+    - Only authenticated users can INSERT / UPDATE / DELETE
+
+  video_testimonies
+    - Anyone can READ rows where published = true
+    - Authenticated users can read ALL rows (including unpublished)
+    - Only authenticated users can INSERT / UPDATE / DELETE
+
+  instagram_posts
+    - Anyone can READ rows where published = true
+    - Authenticated users can read ALL rows
+    - Only authenticated users can INSERT / UPDATE / DELETE
+
+  worship_requests
+    - Anyone can INSERT (public form submission)
+    - Only authenticated users can read, update, or delete
+
+  newsletter_subscribers
+    - Anyone can INSERT (signup form)
+    - Only authenticated users can SELECT or DELETE
+
+  praise_reports
+    - Anyone can READ rows where published = true
+    - Authenticated users can read ALL rows
+    - Anyone can INSERT — but only with published = false (submissions start unpublished)
+    - Only authenticated users can UPDATE or DELETE
+
+The "anon" Supabase client (used on the public site and client components) obeys
+all of the above rules. The "service role" client (used only in src/lib/supabase/service.ts)
+bypasses RLS entirely — it is used exclusively for the Instagram sync process
+which must write posts without a logged-in user session.
+
+
+================================================================================
+7. STORAGE BUCKETS
+================================================================================
+
+Two public storage buckets are defined in schema.sql:
+
+  event-images
+    Purpose     : Upload photos for events (used in admin event form)
+    Public      : Yes — files are publicly accessible by URL
+    Folder      : No enforced subfolder structure
+    Policies    : Anyone can read; authenticated users can upload and delete
+
+  videos
+    Purpose     : Upload video files and thumbnail images
+    Public      : Yes
+    Subfolders  : clips/ for video files (MP4, WebM, etc.)
+                  thumbs/ for thumbnail images (JPG, PNG, WebP)
+    Policies    : Anyone can read; authenticated users can upload and delete
+
+How to get public URLs from Supabase Storage:
+  When you upload a file via the admin panel, the admin code calls
+  supabase.storage.from(bucket).upload(path, file) and then uses
+  supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+  to get the permanent public URL that gets saved to the database.
+
+Supported video formats for the <video> element:
+  MP4 (H.264) — most compatible, recommended
+  WebM (VP8/VP9) — good alternative
+  OGG (Theora) — older format, less common
+  YouTube links DO NOT work — native <video> cannot play YouTube content.
+
+
+================================================================================
+8. PUBLIC-FACING PAGES
+================================================================================
+
+--- / (Homepage) ---
+File: src/app/page.tsx
+Server Component. Fetches four queries in parallel using Promise.all:
+  1. Featured event (featured = true, limit 1)
+  2. Published praise reports (limit 3, newest first)
+  3. Published video testimonies (sorted by sort_order, then created_at)
+  4. Published Instagram posts (limit 6, newest first)
+
+Sections on the page:
+  - Hero: full-screen with headline and CTA buttons
+  - Next Event: shows the single featured event card, or a "check back" message
+  - Mission Pillars: four static content cards (Worship, Community, Outreach, Generosity)
+  - Join the Movement: CTA banner linking to /giving and /contact
+  - Video Testimonies: VideoCarousel if videos exist, or a "coming soon" placeholder
+  - Instagram Feed: 2x3 / 3x2 image grid if posts exist, or 6 placeholder cells
+  - Praise Reports: grid of 3 testimonials (only shown if reports exist)
+
+--- /about ---
+File: src/app/about/page.tsx
+Static page. Content about the ministry's mission, vision, and story.
+
+--- /events ---
+File: src/app/events/page.tsx
+Fetches all events from Supabase, ordered by created_at descending.
+Displays them in a responsive card grid. Each card shows the image, title,
+date, time, and location.
+
+--- /videos ---
+File: src/app/videos/page.tsx
+Fetches all published video_testimonies, ordered by sort_order then created_at.
+Renders them in a 3-column card grid. Each card has a native HTML5 <video>
+player with controls and the thumbnail as the poster image.
+
+--- /giving ---
+File: src/app/giving/page.tsx
+Static page with links or embeds for online donation platforms.
+
+--- /contact ---
+File: src/app/contact/page.tsx
+Contact information + worship/personal praise request form.
+Form submits via the submitWorshipRequest server action.
+
+--- /praise-reports ---
+File: src/app/praise-reports/page.tsx
+Fetches all published praise reports and displays them in a grid.
+
+--- /praise-reports/submit ---
+File: src/app/praise-reports/submit/page.tsx
+Public submission form. Calls submitPraiseReport server action.
+Submissions default to published = false and await admin approval.
+
+
+================================================================================
+9. ADMIN PANEL
+================================================================================
+
+All admin routes live under /admin. The route group (protected) wraps all
+admin pages in a shared layout (src/app/admin/(protected)/layout.tsx) that:
+  1. Calls supabase.auth.getUser() to verify the session
+  2. Redirects to /admin/login if no authenticated user is found
+  3. Renders the AdminSidebar with the user's email
+
+Admin sidebar navigation links:
+  /admin                    → Dashboard (overview stats)
+  /admin/events             → Events CRUD
+  /admin/worship-requests   → View and update status of booking requests
+  /admin/newsletter         → View newsletter subscriber list
+  /admin/praise-reports     → Approve and manage praise report submissions
+  /admin/videos             → Manage video testimonies (upload + metadata)
+  /admin/instagram          → Manage Instagram feed posts + sync from API
+
+--- Admin: Events (/admin/events) ---
+Files: page.tsx + EventsClient.tsx (client component)
+Features:
+  - List all events with title, date, location, featured badge
+  - Create new event (title, location, date, time, description, image upload)
+  - Edit existing events (same fields, pre-filled)
+  - Delete events
+  - Toggle featured status (only one event should be featured at a time)
+  - Image upload goes to the 'event-images' Supabase Storage bucket
+
+--- Admin: Worship Requests (/admin/worship-requests) ---
+File: page.tsx (server component — no client state needed)
+Features:
+  - Read-only list of all incoming booking requests
+  - Shows all fields: name, email, phone, city, purpose, date, description
+  - Status dropdown to move request through: new → contacted → completed
+  - Status update calls updateRequestStatus server action
+
+--- Admin: Newsletter (/admin/newsletter) ---
+File: page.tsx
+Features:
+  - Shows all active email subscribers with signup dates
+  - Can remove/unsubscribe individual emails
+
+--- Admin: Praise Reports (/admin/praise-reports) ---
+Files: page.tsx + PraiseClient.tsx
+Features:
+  - List all praise reports (published and unpublished)
+  - Approve / unpublish with a single toggle (published boolean)
+  - Edit the quote, name, and role fields
+  - Delete reports
+
+--- Admin: Videos (/admin/videos) ---
+Files: page.tsx + VideosClient.tsx
+Features:
+  - List all videos with thumbnail preview, title, autoplay/loop badges, sort order
+  - Create new video:
+      - Title (required)
+      - Video file: Upload to Supabase Storage (clips/ folder) OR enter a direct URL
+      - Thumbnail image: Upload to Supabase Storage (thumbs/ folder) OR enter a URL
+      - Description (optional)
+      - Playback options: Autoplay / Muted / Loop checkboxes
+        NOTE: Autoplay requires Muted due to browser autoplay policies
+      - Overlay Darkness: None / 20% / 40% / 60% / 80%
+        When overlay > 0 and autoplay is on: title/description shown inside the video
+      - Sort Order (integer, lower = shown first)
+      - Published toggle
+  - Edit existing videos (all same fields, pre-filled)
+  - Delete videos
+  - Toggle published status
+
+--- Admin: Instagram (/admin/instagram) ---
+Files: page.tsx + InstagramClient.tsx
+Features:
+  - List all Instagram posts with image preview, caption, published status
+  - Add a post manually (image URL, post URL, caption, published toggle)
+  - Edit existing posts
+  - Delete posts
+  - Toggle published status
+  - "Sync from Instagram" button — calls syncInstagramNow() server action
+    which hits the Instagram Graph API and upserts new/changed posts
+
+
+================================================================================
+10. SERVER ACTIONS
+================================================================================
+
+All server actions are in src/app/actions/. They are marked "use server" and
+use the Next.js revalidatePath() to clear the page cache after mutations.
+
+src/app/actions/auth.ts
+  login(formData)         Sign in with email + password, redirect to /admin
+  logout()                Sign out current user, redirect to /admin/login
+
+src/app/actions/events.ts
+  createEvent(formData)   Insert new event row
+  updateEvent(id, formData) Update existing event
+  deleteEvent(id)         Delete event by ID
+  toggleFeatured(id, val) Set featured = true/false
+
+src/app/actions/worship-requests.ts
+  submitWorshipRequest(prevState, formData)
+                          Public form submission — inserts new worship_request row
+  updateRequestStatus(id, status)
+                          Admin updates status field (new/contacted/completed)
+
+src/app/actions/newsletter.ts
+  subscribeToNewsletter(formData)
+                          Upserts email subscriber (handles duplicate emails gracefully)
+
+src/app/actions/praise-reports.ts
+  submitPraiseReport(prevState, formData)
+                          Public submission — inserts with published = false
+  updatePraiseReport(id, formData)
+                          Admin edits quote/name/role
+  togglePraisePublished(id, published)
+                          Admin approves or unpublishes a report
+  deletePraiseReport(id)  Admin deletes report
+
+src/app/actions/videos.ts
+  createVideo(formData)   Insert new video_testimony row with all playback fields
+  updateVideo(id, formData) Update all video fields
+  deleteVideo(id)         Delete video
+  toggleVideoPublished(id, published)
+                          Toggle published status
+
+src/app/actions/instagram.ts
+  createInstagramPost(formData)     Insert manual post
+  updateInstagramPost(id, formData) Update post
+  deleteInstagramPost(id)           Delete post
+  toggleInstagramPostPublished(id, published) Toggle visibility
+  syncInstagramNow()                Trigger Instagram API sync, return { synced, added, updated, error }
+
+
+================================================================================
+11. API ROUTES
+================================================================================
+
+src/app/api/sync-instagram/route.ts
+  Method   : GET
+  Path     : /api/sync-instagram
+  Purpose  : Called by Vercel Cron once per day at 6:00 AM UTC
+  Auth     : Vercel automatically adds header: Authorization: Bearer {CRON_SECRET}
+             The route verifies this header and returns 401 if it does not match.
+
+  Flow:
+    1. Check Authorization header matches process.env.CRON_SECRET
+    2. Read process.env.INSTAGRAM_ACCESS_TOKEN
+    3. Call syncInstagramFeed(accessToken) from src/lib/sync-instagram.ts
+    4. Return JSON: { synced: N, added: N, updated: N } or { error: "..." }
+
+  Vercel Cron schedule defined in vercel.json:
+    "0 6 * * *" = every day at 06:00 UTC
+
+  You can also trigger this manually from the admin panel via the
+  "Sync from Instagram" button, which calls the syncInstagramNow() server action
+  instead of hitting the HTTP endpoint.
+
+
+================================================================================
+12. SHARED COMPONENTS
+================================================================================
+
+src/components/Navbar.tsx
+  Client component ("use client"). Fixed top navigation bar. Uses useState for
+  mobile menu open/close toggle. Navigation links: Home, About Us, Events,
+  Online Giving, Contact. Also has a "Give Now" CTA button.
+
+src/components/Footer.tsx
+  Static footer with links, social links, and ministry info.
+
+src/components/VideoCarousel.tsx
+  Client component. Accepts an array of VideoTestimony rows.
+  State: current (index), playing (bool), muted (bool), videoRef.
+
+  Behavior:
+    - Filters out any video row with a missing/empty video_url (defensive guard
+      for when the Supabase schema hasn't been migrated yet)
+    - Returns null if no valid videos remain after filtering
+    - Non-playing state: shows thumbnail image (or a gradient placeholder) with
+      a large gold play button overlay
+    - Playing state: renders native HTML5 <video> element with all options
+    - Autoplay videos: object-cover layout (fills frame), overlay shown on top,
+      title/description text overlaid inside the video, mute toggle button
+    - Non-autoplay videos: object-contain layout (letterboxed), controls shown,
+      title/description shown below the player
+    - Navigation: left/right arrow buttons, dot indicators, thumbnail strip
+      (thumbnail strip only shown when 3+ videos)
+
+src/components/PraiseReportsGrid.tsx
+  Renders a grid of praise report cards (quote, name, role).
+
+src/components/NewsletterForm.tsx
+  Client component for email newsletter signup form.
+
+src/components/icons/InstagramIcon.tsx
+  Custom SVG Instagram icon. lucide-react v1.7.0 does not include an Instagram
+  icon, so this custom component was created to match the lucide style.
+  Usage: <InstagramIcon className="w-5 h-5" />
+
+src/components/admin/AdminSidebar.tsx
+  Client component ("use client"). Uses usePathname() to highlight the active
+  nav link. Renders the sidebar navigation for the admin panel. Includes a
+  sign-out button that triggers the logout() server action.
+
+
+================================================================================
+13. AUTHENTICATION
+================================================================================
+
+The site uses Supabase Auth with email + password sign-in.
+
+How it works:
+  1. Admin visits /admin/login and enters credentials
+  2. The login() server action calls supabase.auth.signInWithPassword()
+  3. Supabase creates a session stored in an HTTP-only cookie
+  4. Every request to /admin/(protected) goes through the layout.tsx auth guard
+     which calls supabase.auth.getUser() — if no valid session, redirects to login
+
+There is NO public user registration. Admin accounts must be created manually
+in the Supabase Authentication dashboard (Authentication → Users → Invite User).
+
+The two Supabase clients explained:
+  src/lib/supabase/server.ts
+    Used in Server Components and Server Actions.
+    Reads and writes session cookies from the Next.js cookies() store.
+    Obeys RLS policies.
+
+  src/lib/supabase/client.ts
+    Used in Client Components that need direct Supabase access (e.g. file uploads).
+    Shares the session via cookies automatically in the browser.
+    Obeys RLS policies.
+
+  src/lib/supabase/service.ts
+    Uses the SUPABASE_SERVICE_ROLE_KEY.
+    Bypasses all RLS policies.
+    Used ONLY in src/lib/sync-instagram.ts for the Instagram sync process.
+    Must NEVER be imported from client-side code.
+
+
+================================================================================
+14. INSTAGRAM INTEGRATION
+================================================================================
+
+Context:
+  Meta deprecated the Instagram Basic Display API in December 2024.
+  The new approach uses the Instagram Graph API with a long-lived access token.
+  This requires an Instagram account connected to a Facebook Page and a
+  Facebook Developer App.
+
+How the feed works:
+  1. Instagram posts are stored in the instagram_posts Supabase table
+  2. The homepage reads published posts and displays them in a 3-column grid
+  3. Posts can be managed manually in the admin panel (/admin/instagram)
+  4. Optionally, posts can be auto-synced from the Instagram Graph API
+
+Getting an access token:
+  Step 1: Create a Facebook Developer App at developers.facebook.com
+  Step 2: Add the "Instagram Graph API" product to your app
+  Step 3: Connect your Instagram Business or Creator account to a Facebook Page
+  Step 4: Generate a short-lived token (valid 1 hour) using the Graph API Explorer
+  Step 5: Exchange it for a long-lived token (valid ~60 days) using:
+    GET https://graph.instagram.com/access_token
+      ?grant_type=ig_exchange_token
+      &client_id={app-id}
+      &client_secret={app-secret}
+      &access_token={short-lived-token}
+  Step 6: Save the long-lived token as INSTAGRAM_ACCESS_TOKEN in your env vars
+
+Token refresh:
+  Long-lived tokens expire after 60 days. Refresh before expiry using:
+    GET https://graph.instagram.com/refresh_access_token
+      ?grant_type=ig_refresh_token
+      &access_token={current-long-lived-token}
+  You should set a calendar reminder to refresh every 50 days.
+  If the token expires, the auto-sync will fail but the manually curated posts
+  in the database will continue to show on the site.
+
+The sync logic (src/lib/sync-instagram.ts):
+  - Fetches the 20 most recent posts from GET /me/media
+  - Fields: id, caption, media_type, media_url, permalink, thumbnail_url
+  - Filters to displayable media: IMAGE, CAROUSEL_ALBUM, VIDEO (with thumbnail)
+  - For VIDEO posts: uses thumbnail_url as the image (videos don't display inline)
+  - Compares fetched instagram_ids against existing rows in the DB
+  - NEW posts: inserted with published = true
+  - EXISTING posts: caption/image_url/post_url updated — published flag never touched
+    (so if you manually hid a post, it stays hidden after a sync)
+  - Returns: { synced, added, updated } or { error }
+
+Auto-sync via Vercel Cron:
+  vercel.json schedules GET /api/sync-instagram at 06:00 UTC daily.
+  The route verifies the CRON_SECRET before calling syncInstagramFeed().
+  This runs automatically in production on Vercel with no manual intervention.
+
+Manual sync via Admin panel:
+  The "Sync from Instagram" button in /admin/instagram calls syncInstagramNow()
+  which runs the same logic on-demand without hitting the HTTP endpoint.
+
+
+================================================================================
+15. VIDEO SYSTEM
+================================================================================
+
+Video storage:
+  Videos are stored in the Supabase Storage 'videos' bucket.
+  Recommended folder structure:
+    videos/clips/filename.mp4      (the video file)
+    videos/thumbs/filename.jpg     (the thumbnail/poster image)
+
+  The admin panel's file upload UI handles this automatically.
+
+Video format requirements:
+  The site uses the native HTML5 <video> element (NOT YouTube or Vimeo embeds).
+  Supported formats: MP4 (H.264/H.265), WebM (VP8/VP9), OGG
+  MP4 with H.264 encoding is recommended for maximum browser compatibility.
+  Maximum file size is limited by your Supabase Storage plan.
+
+IMPORTANT — YouTube URLs do not work:
+  The old schema had a 'youtube_url' column. The new schema renames it to
+  'video_url' and uses the native <video> element. YouTube URLs cannot be
+  played by a native <video> element — only direct video file URLs work.
+  If you had YouTube videos, you will need to re-upload them as video files
+  or host them on a CDN and use the direct file URL.
+
+Playback options per video:
+  autoplay    When enabled, the video starts playing immediately when the page
+              loads. The user never needs to click the play button.
+              Browsers REQUIRE the video to be muted for autoplay to work.
+
+  muted       Start the video without audio. When autoplay is on, a mute/unmute
+              toggle button appears in the bottom-right of the video player.
+
+  loop        The video repeats continuously when it reaches the end.
+
+  overlay_opacity  A dark overlay placed on top of the video.
+              Useful for background/ambient autoplay videos where you want to
+              display text on top. When overlay > 0 AND autoplay is on,
+              the video title and description are shown as text inside the player.
+              Options: 0 (none), 20%, 40%, 60%, 80%
+
+VideoCarousel component behavior:
+  - Non-playing state: large gold play button over thumbnail (or gradient)
+  - Playing state: full native <video> element
+  - Autoplay + overlay: title/description overlaid inside the video
+  - No autoplay: title/description shown below the player
+  - Multi-video navigation: arrow buttons, dot indicators, thumbnail strip (3+ videos)
+  - Defensive: filters out rows with no video_url, returns nothing if none remain
+
+
+================================================================================
+16. STYLING AND DESIGN SYSTEM
+================================================================================
+
+Tailwind CSS v4 is used with a custom theme defined in src/app/globals.css
+inside an @theme inline block.
+
+Custom colors:
+  gold          #c8a44e    Primary accent — used for buttons, highlights, icons
+  gold-light    #e4cc7a    Hover state for gold
+  gold-dark     #a6863a    Darker variant of gold
+  warm-white    #faf8f5    Off-white background for light sections
+  warm-gray     #f0ece6    Slightly darker off-white for cards and inputs
+  charcoal      #2a2a2a    Dark text color (not pure black)
+  deep-black    #111111    Near-black for dark sections and the navbar
+
+Custom fonts (loaded via next/font/google):
+  --font-sans     Inter       Body text, navigation, UI elements
+  --font-display  Playfair Display  All headings (h1–h3), hero text, section titles
+  Usage: className="font-[family-name:var(--font-display)]"
+
+Custom CSS utilities (defined in globals.css):
+  .animate-fade-in-up    Fade + slide up on load (hero section entrance animation)
+  .animate-fade-in       Simple opacity fade-in
+  .animate-scale-in      Scale from 95% to 100% with fade-in
+  .animation-delay-200   Add 200ms delay to an animation
+  .animation-delay-400   Add 400ms delay
+  .animation-delay-600   Add 600ms delay
+  .text-gradient-gold    Gold gradient text (used for the hero headline accent)
+
+Design principles:
+  - Dark hero sections use deep-black (#111) with white text and gold accents
+  - Light content sections use warm-white (#faf8f5) or white with charcoal text
+  - Rounded corners throughout: rounded-xl, rounded-2xl, rounded-3xl
+  - Subtle shadows: shadow-sm, shadow-xl
+  - Smooth hover transitions on all interactive elements
+  - Gold (#c8a44e) is the only accent color — used consistently for CTAs, links,
+    icons, borders on active states, and the brand logo
+
+
+================================================================================
+17. DEPLOYMENT (VERCEL)
+================================================================================
+
+The project is deployed to Vercel. Next.js 16 with App Router is supported
+natively on Vercel without any special configuration.
+
+Deployment steps:
+  1. Push code to GitHub (main branch or a feature branch)
+  2. Connect the GitHub repository to a new Vercel project
+  3. Add all 5 environment variables in Vercel Project Settings → Environment Variables:
+       NEXT_PUBLIC_SUPABASE_URL
+       NEXT_PUBLIC_SUPABASE_ANON_KEY
+       SUPABASE_SERVICE_ROLE_KEY
+       INSTAGRAM_ACCESS_TOKEN
+       CRON_SECRET
+  4. Vercel will auto-deploy on every push to main
+
+Vercel Cron:
+  The vercel.json file in the project root configures a daily cron job:
+    Path:     /api/sync-instagram
+    Schedule: 0 6 * * * (every day at 06:00 UTC)
+
+  Vercel Cron jobs are only active on deployed projects (not on localhost).
+  Vercel automatically adds the CRON_SECRET to the Authorization header when
+  calling the cron path. Make sure CRON_SECRET is set in Vercel env vars.
+  Cron jobs are available on Vercel's free Hobby plan (1 cron job per project).
+
+Image domains (next.config.ts):
+  The Next.js Image component is configured to allow images from:
+    images.unsplash.com   (placeholder/demo images)
+    *.supabase.co         (Supabase Storage uploaded images)
+    img.youtube.com       (YouTube thumbnails — legacy, may be removed)
+
+Build commands:
+  npm run dev          Start local dev server (http://localhost:3000)
+  npm run build        Build for production
+  npm run start        Start production server locally
+  npm run lint         Run ESLint on src/
+  npm run type-check   Run TypeScript type checker without emitting files
+
+
+================================================================================
+18. LOCAL DEVELOPMENT SETUP
+================================================================================
+
+Prerequisites:
+  - Node.js 18 or later
+  - npm
+  - A Supabase project (free tier works fine)
+
+Step 1: Clone the repository
+  git clone <repository-url>
+  cd proclaimingpraise
+
+Step 2: Install dependencies
+  npm install
+
+Step 3: Create environment variables file
+  Create a file named .env.local in the project root with:
+
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+    INSTAGRAM_ACCESS_TOKEN=your-instagram-token-here
+    CRON_SECRET=any-random-secret-string
+
+  The last two are optional for basic local development.
+
+Step 4: Initialize the Supabase database
+  - Go to your Supabase project → SQL Editor
+  - Open supabase/schema.sql from this repository
+  - Paste the entire contents and click Run
+  - This creates all tables, RLS policies, storage buckets, and seed data
+
+Step 5: Create an admin user
+  - Go to Supabase Dashboard → Authentication → Users
+  - Click "Invite User" and enter an email address
+  - Set a password for the user (via the email invite or manually in the dashboard)
+  - Use these credentials to log in at /admin/login
+
+Step 6: Start the development server
+  npm run dev
+  Open http://localhost:3000
+
+Step 7 (optional): Upload a test video
+  - Go to http://localhost:3000/admin/videos
+  - Click "Add Video"
+  - Upload an MP4 file and fill in the title
+  - Set Published to on and save
+  - The video should appear on the homepage carousel and /videos page
+
+
+================================================================================
+19. COMMON OPERATIONS GUIDE
+================================================================================
+
+HOW TO: Add a new event
+  1. Go to /admin/events
+  2. Click "Add Event"
+  3. Fill in title, location, date (text like "April 18, 2026"), time, description
+  4. Optionally upload an image
+  5. Check "Featured" to show it as the "Next Event" on the homepage
+  6. Save
+
+HOW TO: Add a worship request booking option for a specific event
+  The /contact page has a "purpose" field (high energy vs intimate worship).
+  For event-specific booking, look at adding an event dropdown to the form.
+  Currently, event details are captured via the free-text description field.
+
+HOW TO: Publish a praise report from a community member
+  1. Go to /admin/praise-reports
+  2. Submitted reports appear with "Unpublished" status
+  3. Review the quote, name, and role
+  4. Click the toggle or approve button to set published = true
+  5. The report now appears on /praise-reports and the homepage preview
+
+HOW TO: Upload a video
+  1. Go to /admin/videos → Add Video
+  2. Under "Video File", choose "Upload" tab and select an MP4 file
+  3. Optionally upload a thumbnail image
+  4. Fill in the title and any playback options
+  5. Set Sort Order (0 = appears first, higher numbers appear later)
+  6. Toggle Published on
+  7. Save — video appears on homepage carousel and /videos page
+
+HOW TO: Make a video play as a background loop
+  1. In the video form, check Autoplay, Muted, and Loop
+  2. Set Overlay Darkness to 40% or 60% (so text is readable over the video)
+  3. The video will play automatically in the carousel, fullscreen with overlay
+  4. The title and description will appear as text inside the player
+
+HOW TO: Sync Instagram manually
+  1. Go to /admin/instagram
+  2. Click "Sync from Instagram"
+  3. The system fetches the latest 20 posts from your Instagram account
+  4. New posts are added (published by default)
+  5. Existing posts are updated (caption/image) but their published state is kept
+
+HOW TO: Hide an Instagram post from the site
+  1. Go to /admin/instagram
+  2. Find the post and click the published toggle to turn it off
+  3. It stays in the database but no longer shows on the homepage
+  4. If you sync again later, the post will remain hidden (sync never re-publishes)
+
+HOW TO: Run the schema after updates
+  Whenever schema.sql changes (new columns, new tables, policy changes):
+  1. Open Supabase Dashboard → SQL Editor
+  2. Paste the full contents of supabase/schema.sql
+  3. Click Run
+  The script uses CREATE TABLE IF NOT EXISTS, ALTER TABLE ADD COLUMN IF NOT EXISTS,
+  and DROP POLICY IF EXISTS / CREATE POLICY patterns so it is safe to re-run.
+
+HOW TO: Refresh the Instagram access token (do this every 50 days)
+  In a browser or API tool, call:
+    GET https://graph.instagram.com/refresh_access_token
+      ?grant_type=ig_refresh_token
+      &access_token=YOUR_CURRENT_TOKEN
+
+  Copy the new access_token from the response.
+  Update INSTAGRAM_ACCESS_TOKEN in your Vercel environment variables.
+  Redeploy (or trigger a Vercel environment variable refresh).
+
+HOW TO: Add a new admin user
+  1. Go to Supabase Dashboard → Authentication → Users
+  2. Click "Invite User"
+  3. Enter the new admin's email
+  4. They receive an email to set their password
+  5. They can then log in at /admin/login
+
+HOW TO: Check if the cron job is running
+  1. Go to Vercel Dashboard → your project → Cron Jobs tab
+  2. You can see the last run time and any errors
+  3. You can also manually trigger it from that screen
+
+================================================================================
+  END OF TECHNICAL DOCUMENTATION
+================================================================================

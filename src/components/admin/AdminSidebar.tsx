@@ -10,8 +10,10 @@ import {
   HeartHandshake,
   Mail,
   Star,
+  Play,
   LogOut,
 } from "lucide-react";
+import { InstagramIcon } from "@/components/icons/InstagramIcon";
 
 const navLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -19,6 +21,8 @@ const navLinks = [
   { href: "/admin/worship-requests", label: "Worship Requests", icon: HeartHandshake },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
   { href: "/admin/praise-reports", label: "Praise Reports", icon: Star },
+  { href: "/admin/videos", label: "Videos", icon: Play },
+  { href: "/admin/instagram", label: "Instagram", icon: InstagramIcon },
 ];
 
 export function AdminSidebar({ email }: { email: string }) {

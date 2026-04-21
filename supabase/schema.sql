@@ -42,6 +42,48 @@ create table if not exists newsletter_subscribers (
   created_at timestamptz not null default now()
 );
 
+-- Video Testimonies
+create table if not exists video_testimonies (
+  id            uuid primary key default gen_random_uuid(),
+  title         text not null,
+  video_url     text not null,
+  thumbnail_url text,
+  description   text,
+  published     boolean not null default true,
+  sort_order    int not null default 0,
+  created_at    timestamptz not null default now()
+);
+-- Migrate from youtube_url → video_url if table was created under the old schema
+do $$ begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_name = 'video_testimonies' and column_name = 'youtube_url'
+  ) then
+    alter table video_testimonies rename column youtube_url to video_url;
+  end if;
+end $$;
+alter table video_testimonies add column if not exists thumbnail_url text;
+alter table video_testimonies add column if not exists autoplay boolean not null default false;
+alter table video_testimonies add column if not exists muted boolean not null default false;
+alter table video_testimonies add column if not exists loop boolean not null default false;
+alter table video_testimonies add column if not exists overlay_opacity int not null default 0;
+-- Placement flags: control where each video appears
+alter table video_testimonies add column if not exists show_on_home boolean not null default true;
+alter table video_testimonies add column if not exists show_on_videos boolean not null default true;
+
+-- Instagram Posts (manually curated + auto-synced feed)
+create table if not exists instagram_posts (
+  id           uuid primary key default gen_random_uuid(),
+  instagram_id text unique,        -- null for manually added posts
+  image_url    text not null,
+  post_url     text not null,
+  caption      text,
+  published    boolean not null default true,
+  created_at   timestamptz not null default now()
+);
+-- Add instagram_id if the table was created before this column existed
+alter table instagram_posts add column if not exists instagram_id text unique;
+
 -- Praise Reports / Testimonials
 create table if not exists praise_reports (
   id         uuid primary key default gen_random_uuid(),
@@ -60,6 +102,8 @@ alter table events enable row level security;
 alter table worship_requests enable row level security;
 alter table newsletter_subscribers enable row level security;
 alter table praise_reports enable row level security;
+alter table video_testimonies enable row level security;
+alter table instagram_posts enable row level security;
 
 -- Events
 drop policy if exists "Public read events" on events;
@@ -70,6 +114,26 @@ create policy "Public read events"   on events for select using (true);
 create policy "Auth insert events"   on events for insert with check (auth.role() = 'authenticated');
 create policy "Auth update events"   on events for update using (auth.role() = 'authenticated');
 create policy "Auth delete events"   on events for delete using (auth.role() = 'authenticated');
+
+-- Video testimonies
+drop policy if exists "Public read video_testimonies"  on video_testimonies;
+drop policy if exists "Auth insert video_testimonies"  on video_testimonies;
+drop policy if exists "Auth update video_testimonies"  on video_testimonies;
+drop policy if exists "Auth delete video_testimonies"  on video_testimonies;
+create policy "Public read video_testimonies"  on video_testimonies for select using (published = true or auth.role() = 'authenticated');
+create policy "Auth insert video_testimonies"  on video_testimonies for insert with check (auth.role() = 'authenticated');
+create policy "Auth update video_testimonies"  on video_testimonies for update using (auth.role() = 'authenticated');
+create policy "Auth delete video_testimonies"  on video_testimonies for delete using (auth.role() = 'authenticated');
+
+-- Instagram posts
+drop policy if exists "Public read instagram_posts"  on instagram_posts;
+drop policy if exists "Auth insert instagram_posts"  on instagram_posts;
+drop policy if exists "Auth update instagram_posts"  on instagram_posts;
+drop policy if exists "Auth delete instagram_posts"  on instagram_posts;
+create policy "Public read instagram_posts"  on instagram_posts for select using (published = true or auth.role() = 'authenticated');
+create policy "Auth insert instagram_posts"  on instagram_posts for insert with check (auth.role() = 'authenticated');
+create policy "Auth update instagram_posts"  on instagram_posts for update using (auth.role() = 'authenticated');
+create policy "Auth delete instagram_posts"  on instagram_posts for delete using (auth.role() = 'authenticated');
 
 -- Worship requests
 drop policy if exists "Auth all worship_requests"    on worship_requests;
@@ -107,6 +171,10 @@ insert into storage.buckets (id, name, public)
 values ('event-images', 'event-images', true)
 on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+values ('videos', 'videos', true)
+on conflict (id) do nothing;
+
 drop policy if exists "Public read event-images"  on storage.objects;
 drop policy if exists "Auth upload event-images"  on storage.objects;
 drop policy if exists "Auth delete event-images"  on storage.objects;
@@ -118,6 +186,18 @@ create policy "Auth upload event-images"
 create policy "Auth delete event-images"
   on storage.objects for delete
   using (bucket_id = 'event-images' and auth.role() = 'authenticated');
+
+drop policy if exists "Public read videos"  on storage.objects;
+drop policy if exists "Auth upload videos"  on storage.objects;
+drop policy if exists "Auth delete videos"  on storage.objects;
+create policy "Public read videos"
+  on storage.objects for select using (bucket_id = 'videos');
+create policy "Auth upload videos"
+  on storage.objects for insert
+  with check (bucket_id = 'videos' and auth.role() = 'authenticated');
+create policy "Auth delete videos"
+  on storage.objects for delete
+  using (bucket_id = 'videos' and auth.role() = 'authenticated');
 
 -- ============================================================
 -- Seed: initial event and praise reports

@@ -9,13 +9,43 @@ import {
   Music,
   HandHeart,
 } from "lucide-react";
+import { InstagramIcon } from "@/components/icons/InstagramIcon";
 import { createClient } from "@/lib/supabase/server";
 import { PraiseReportsGrid } from "@/components/PraiseReportsGrid";
+import { VideoCarousel } from "@/components/VideoCarousel";
 
 export default async function Home() {
   const supabase = await createClient();
 
-  const [{ data: featuredEvent }, { data: praiseReports }] = await Promise.all([
+  // Fetch videos for homepage — filter by show_on_home when the column exists,
+  // fall back to all published videos if the DB migration hasn't been run yet.
+  async function fetchHomeVideos() {
+    const { data, error } = await supabase
+      .from("video_testimonies")
+      .select("*")
+      .eq("published", true)
+      .eq("show_on_home", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (error) {
+      // Placement columns not yet in DB — return all published videos
+      const { data: fallback } = await supabase
+        .from("video_testimonies")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      return fallback;
+    }
+    return data;
+  }
+
+  const [
+    { data: featuredEvent },
+    { data: praiseReports },
+    videos,
+    { data: instagramPosts },
+  ] = await Promise.all([
     supabase
       .from("events")
       .select("*")
@@ -29,6 +59,13 @@ export default async function Home() {
       .eq("published", true)
       .order("created_at", { ascending: false })
       .limit(3),
+    fetchHomeVideos(),
+    supabase
+      .from("instagram_posts")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false })
+      .limit(6),
   ]);
 
   return (
@@ -268,6 +305,116 @@ export default async function Home() {
               Get in Touch
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* ─── Video Testimonies Carousel ─── */}
+      <section className="bg-deep-black py-24 lg:py-32">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
+              Hear From Our Community
+            </p>
+            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-white">
+              Video Testimonies
+            </h2>
+          </div>
+
+          {videos && videos.length > 0 ? (
+            <>
+              <VideoCarousel videos={videos} />
+              <div className="text-center mt-12">
+                <Link
+                  href="/videos"
+                  className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
+                >
+                  Watch All Videos
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-16 border border-white/10 rounded-3xl">
+              <p className="text-white/40 mb-6">
+                Video testimonies coming soon — check back after our next event.
+              </p>
+              <Link
+                href="/videos"
+                className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
+              >
+                Visit Videos Page
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Instagram Feed ─── */}
+      <section className="bg-white py-24 lg:py-32">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
+              Follow Along
+            </p>
+            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal mb-4">
+              @proclaimingpraise
+            </h2>
+            <a
+              href="https://www.instagram.com/proclaimingpraise"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-charcoal/50 hover:text-gold transition-colors text-sm"
+            >
+              <InstagramIcon className="w-4 h-4" />
+              Follow us on Instagram
+            </a>
+          </div>
+
+          {instagramPosts && instagramPosts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+              {instagramPosts.map((post) => (
+                <a
+                  key={post.id}
+                  href={post.post_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-warm-gray"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.image_url}
+                    alt={post.caption ?? ""}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-deep-black/0 group-hover:bg-deep-black/60 transition-colors duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2 px-4 text-center">
+                      <InstagramIcon className="w-6 h-6 text-white" />
+                      {post.caption && (
+                        <p className="text-white text-xs leading-relaxed line-clamp-3">
+                          {post.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <a
+                  key={i}
+                  href="https://www.instagram.com/proclaimingpraise"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-warm-gray flex items-center justify-center hover:bg-warm-gray/70 transition-colors"
+                >
+                  <InstagramIcon className="w-8 h-8 text-charcoal/20 group-hover:text-gold/40 transition-colors" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

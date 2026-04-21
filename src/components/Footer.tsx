@@ -123,7 +123,6 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               {[
                 { href: "/events", label: "Upcoming Events" },
-                { href: "/worship-warriors", label: "Worship Warriors" },
                 { href: "/praise-reports", label: "Praise Reports" },
                 { href: "/giving", label: "Donate" },
               ].map((link) => (

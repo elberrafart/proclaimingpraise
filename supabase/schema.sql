@@ -30,9 +30,11 @@ create table if not exists worship_requests (
   event_year  int,
   event_time  text,
   date_tbd    boolean not null default false,
-  status      text not null default 'new' check (status in ('new', 'contacted', 'completed')),
-  created_at  timestamptz not null default now()
+  status       text not null default 'new' check (status in ('new', 'contacted', 'completed')),
+  completed_by text,
+  created_at   timestamptz not null default now()
 );
+alter table worship_requests add column if not exists completed_by text;
 
 -- Newsletter Subscribers
 create table if not exists newsletter_subscribers (

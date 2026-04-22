@@ -42,6 +42,9 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(videos.find((v) => v.video_url)?.muted ?? false);
+  // Controls title visibility: hidden by default, shown on hover (desktop)
+  // or tap (mobile). Managed via pointer events so both inputs work the same.
+  const [titleVisible, setTitleVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const validVideos = videos.filter((v) => v.video_url);
@@ -70,10 +73,39 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
     if (videoRef.current) videoRef.current.muted = next;
   }
 
-  return (
-    // `group` here lets child elements react to hovering anywhere on the carousel
-    <div className="w-full group">
+  // Desktop: show on mouse enter, hide on mouse leave.
+  // Mobile: tap anywhere on the carousel toggles the title.
+  // We track whether the last interaction was touch to avoid double-firing
+  // (browsers fire both touch and mouse events on some devices).
+  const lastWasTouch = useRef(false);
 
+  function handleMouseEnter() {
+    if (lastWasTouch.current) return;
+    setTitleVisible(true);
+  }
+  function handleMouseLeave() {
+    if (lastWasTouch.current) return;
+    setTitleVisible(false);
+  }
+  function handleTouchStart() {
+    lastWasTouch.current = true;
+    setTitleVisible((v) => !v);
+    // Reset after a short delay so mouse events still work if the device
+    // supports both (e.g. touch laptops)
+    setTimeout(() => { lastWasTouch.current = false; }, 500);
+  }
+
+  const titleCls = `transition-opacity duration-300 ${
+    titleVisible ? "opacity-100" : "opacity-0"
+  }`;
+
+  return (
+    <div
+      className="w-full"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+    >
       {/* ── Player ── */}
       <div className="relative aspect-video rounded-2xl overflow-hidden bg-black max-w-3xl mx-auto shadow-2xl">
         {shouldPlay ? (
@@ -114,9 +146,9 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
               />
             )}
 
-            {/* Title / description overlaid — fades on hover */}
+            {/* Title / description overlaid — hidden by default, revealed on hover/tap */}
             {isAutoplay && hasOverlay && (
-              <div className="absolute inset-0 flex flex-col items-center justify-end pb-10 px-8 z-10 text-center pointer-events-none transition-opacity duration-500 group-hover:opacity-0">
+              <div className={`absolute inset-0 flex flex-col items-center justify-end pb-10 px-8 z-10 text-center pointer-events-none ${titleCls}`}>
                 <h3 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-white drop-shadow-lg mb-2">
                   {video.title}
                 </h3>
@@ -181,9 +213,9 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
         )}
       </div>
 
-      {/* ── Title below player — fades on hover ── */}
+      {/* ── Title below player — hidden by default, revealed on hover/tap ── */}
       {!(isAutoplay && hasOverlay) && (
-        <div className="text-center mt-6 max-w-2xl mx-auto px-4 transition-opacity duration-500 group-hover:opacity-0">
+        <div className={`text-center mt-6 max-w-2xl mx-auto px-4 ${titleCls}`}>
           <h3 className="font-[family-name:var(--font-display)] text-xl md:text-2xl text-white mb-2">
             {video.title}
           </h3>

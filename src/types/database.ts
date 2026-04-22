@@ -27,6 +27,7 @@ export type WorshipRequestRow = {
   event_time: string | null;
   date_tbd: boolean;
   status: "new" | "contacted" | "completed";
+  completed_by: string | null;
   created_at: string;
 };
 
@@ -118,6 +119,7 @@ export type Database = {
           event_time?: string | null;
           date_tbd?: boolean;
           status?: "new" | "contacted" | "completed";
+          completed_by?: string | null;
           created_at?: string;
         };
         Update: {
@@ -133,6 +135,7 @@ export type Database = {
           event_time?: string | null;
           date_tbd?: boolean;
           status?: "new" | "contacted" | "completed";
+          completed_by?: string | null;
         };
         Relationships: [];
       };

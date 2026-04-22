@@ -8,7 +8,7 @@ import {
   toggleVideoPublished,
 } from "@/app/actions/videos";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Play, Upload, Link2, X, Image } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Play, Upload, Link2, X, Image, Home, MonitorPlay } from "lucide-react";
 import type { VideoTestimony } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -490,6 +490,7 @@ export function VideosClient({ videos }: { videos: VideoTestimony[] }) {
             <thead className="bg-warm-white text-charcoal/50 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3 text-left">Video</th>
+                <th className="px-6 py-3 text-left">Placement</th>
                 <th className="px-6 py-3 text-left">Order</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
@@ -499,7 +500,7 @@ export function VideosClient({ videos }: { videos: VideoTestimony[] }) {
               {videos.map((video) =>
                 editingId === video.id ? (
                   <tr key={video.id}>
-                    <td colSpan={4} className="px-6 py-4">
+                    <td colSpan={5} className="px-6 py-4">
                       <VideoForm
                         initial={{
                           title: video.title,
@@ -539,6 +540,23 @@ export function VideosClient({ videos }: { videos: VideoTestimony[] }) {
                           )}
                         </div>
                         <span className="font-medium text-charcoal">{video.title}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {video.show_on_home && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-600">
+                            <Home className="w-3 h-3" /> Home
+                          </span>
+                        )}
+                        {video.show_on_videos && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-purple-50 text-purple-600">
+                            <MonitorPlay className="w-3 h-3" /> Videos
+                          </span>
+                        )}
+                        {!video.show_on_home && !video.show_on_videos && (
+                          <span className="text-xs text-charcoal/30">Hidden</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-charcoal/60">{video.sort_order}</td>

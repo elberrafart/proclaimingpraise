@@ -32,11 +32,19 @@ export async function submitWorshipRequest(
   return { success: true };
 }
 
-export async function updateRequestStatus(id: string, status: string) {
+export async function updateRequestStatus(
+  id: string,
+  status: string,
+  completedBy?: string | null
+) {
   const supabase = await createClient();
   await supabase
     .from("worship_requests")
-    .update({ status: status as "new" | "contacted" | "completed" })
+    .update({
+      status: status as "new" | "contacted" | "completed",
+      // Record who completed it; clear the field if status moves away from completed
+      completed_by: status === "completed" ? (completedBy || null) : null,
+    })
     .eq("id", id);
   revalidatePath("/admin/worship-requests");
 }

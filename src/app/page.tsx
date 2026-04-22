@@ -13,6 +13,7 @@ import { InstagramIcon } from "@/components/icons/InstagramIcon";
 import { createClient } from "@/lib/supabase/server";
 import { PraiseReportsGrid } from "@/components/PraiseReportsGrid";
 import { VideoCarousel } from "@/components/VideoCarousel";
+import { HeroVideo } from "@/components/HeroVideo";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -73,16 +74,8 @@ export default async function Home() {
       {/* ─── Hero ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-deep-black">
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1920&q=80')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-deep-black/60 via-deep-black/40 to-deep-black" />
+          <HeroVideo />
+          <div className="absolute inset-0 bg-gradient-to-b from-deep-black/70 via-deep-black/60 to-deep-black" />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-20">

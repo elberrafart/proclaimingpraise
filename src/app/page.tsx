@@ -9,25 +9,73 @@ import {
   Music,
   HandHeart,
 } from "lucide-react";
+import { InstagramIcon } from "@/components/icons/InstagramIcon";
+import { createClient } from "@/lib/supabase/server";
+import { PraiseReportsGrid } from "@/components/PraiseReportsGrid";
+import { VideoCarousel } from "@/components/VideoCarousel";
+import { HeroVideo } from "@/components/HeroVideo";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+
+  // Fetch videos for homepage — filter by show_on_home when the column exists,
+  // fall back to all published videos if the DB migration hasn't been run yet.
+  async function fetchHomeVideos() {
+    const { data, error } = await supabase
+      .from("video_testimonies")
+      .select("*")
+      .eq("published", true)
+      .eq("show_on_home", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (error) {
+      // Placement columns not yet in DB — return all published videos
+      const { data: fallback } = await supabase
+        .from("video_testimonies")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      return fallback;
+    }
+    return data;
+  }
+
+  const [
+    { data: featuredEvent },
+    { data: praiseReports },
+    videos,
+    { data: instagramPosts },
+  ] = await Promise.all([
+    supabase
+      .from("events")
+      .select("*")
+      .eq("featured", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("praise_reports")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    fetchHomeVideos(),
+    supabase
+      .from("instagram_posts")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false })
+      .limit(6),
+  ]);
+
   return (
     <>
       {/* ─── Hero ─── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background with gradient overlay */}
         <div className="absolute inset-0 bg-deep-black">
-          {/* Placeholder for worship background image — replace src with actual photo */}
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              backgroundImage:
-                "url('https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1920&q=80')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-deep-black/60 via-deep-black/40 to-deep-black" />
+          <HeroVideo />
+          <div className="absolute inset-0 bg-gradient-to-b from-deep-black/70 via-deep-black/60 to-deep-black" />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-20">
@@ -58,7 +106,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1.5">
             <div className="w-1.5 h-3 bg-gold rounded-full" />
@@ -78,58 +125,76 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 overflow-hidden">
-            <div className="grid md:grid-cols-2">
-              {/* Event Image */}
-              <div className="relative h-64 md:h-auto min-h-[320px]">
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      "url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
-                  Upcoming
-                </div>
-              </div>
-
-              {/* Event Details */}
-              <div className="p-8 md:p-10 flex flex-col justify-center">
-                <h3 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-6">
-                  Public Praise
-                  <br />
-                  Salt Creek Sunset
-                </h3>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <MapPin className="w-5 h-5 text-gold shrink-0" />
-                    <span>Salt Creek Bluff Park, CA</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <Calendar className="w-5 h-5 text-gold shrink-0" />
-                    <span>April 18, 2026</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-charcoal/70">
-                    <Clock className="w-5 h-5 text-gold shrink-0" />
-                    <span>6:00 PM</span>
+          {featuredEvent ? (
+            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 overflow-hidden">
+              <div className="grid md:grid-cols-2">
+                <div className="relative h-64 md:h-auto min-h-[320px]">
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: featuredEvent.image_url
+                        ? `url('${featuredEvent.image_url}')`
+                        : "linear-gradient(135deg, #1a1a1a, #2a2a2a)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-gold rounded-full text-xs font-bold text-deep-black uppercase tracking-wider">
+                    Upcoming
                   </div>
                 </div>
 
-                <Link
-                  href="/events"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
-                >
-                  Register Now
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="p-8 md:p-10 flex flex-col justify-center">
+                  <h3 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl text-charcoal mb-6">
+                    {featuredEvent.title}
+                  </h3>
+
+                  {featuredEvent.description && (
+                    <p className="text-charcoal/60 leading-relaxed mb-6 text-sm">
+                      {featuredEvent.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-4 mb-8">
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <MapPin className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.location}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <Calendar className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.date}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-charcoal/70">
+                      <Clock className="w-5 h-5 text-gold shrink-0" />
+                      <span>{featuredEvent.time}</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/events"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
+                  >
+                    See All Events
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-black/5 p-16 text-center">
+              <p className="text-charcoal/50 mb-6">
+                No upcoming events at the moment — check back soon!
+              </p>
+              <Link
+                href="/events"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all"
+              >
+                View Events Page
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -145,7 +210,7 @@ export default function Home() {
             </h2>
             <p className="text-charcoal/60 max-w-2xl mx-auto text-lg">
               We are a Holy Spirit led ministry creating intentional spaces where
-              worship exists beyond stages — into homes, hospitals, communities,
+              worship exists beyond stages into homes, hospitals, communities,
               and everyday moments.
             </p>
           </div>
@@ -236,72 +301,145 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Praise Reports Preview ─── */}
-      <section className="bg-warm-white py-24 lg:py-32">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
+      {/* ─── Video Testimonies Carousel ─── */}
+      <section className="bg-deep-black py-24 lg:py-32">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
             <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
-              Testimonies
+              Hear From Our Community
             </p>
-            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal">
-              Praise Reports
+            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-white">
+              Video Testimonies
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                quote:
-                  "The Salt Creek sunset praise was one of the most powerful worship experiences of my life. God showed up in such a real way.",
-                name: "Sarah M.",
-                role: "Worship Attendee",
-              },
-              {
-                quote:
-                  "Proclaiming Praise has given me a community where I can grow in my faith and use my gifts to serve others.",
-                name: "David R.",
-                role: "Worship Warrior",
-              },
-              {
-                quote:
-                  "I love how this ministry takes worship outside the four walls. It's changing lives and transforming hearts.",
-                name: "Maria L.",
-                role: "Volunteer",
-              },
-            ].map((report) => (
-              <div
-                key={report.name}
-                className="bg-white p-8 rounded-2xl shadow-sm"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-gold text-lg">
-                      &#9733;
-                    </span>
-                  ))}
-                </div>
-                <p className="text-charcoal/70 leading-relaxed mb-6 italic">
-                  &ldquo;{report.quote}&rdquo;
-                </p>
-                <div>
-                  <p className="font-semibold text-charcoal">{report.name}</p>
-                  <p className="text-sm text-charcoal/50">{report.role}</p>
-                </div>
+          {videos && videos.length > 0 ? (
+            <>
+              <VideoCarousel videos={videos} />
+              <div className="text-center mt-12">
+                <Link
+                  href="/videos"
+                  className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
+                >
+                  Watch All Videos
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link
-              href="/praise-reports"
-              className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
-            >
-              Read More Stories
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+            </>
+          ) : (
+            <div className="text-center py-16 border border-white/10 rounded-3xl">
+              <p className="text-white/40 mb-6">
+                Video testimonies coming soon — check back after our next event.
+              </p>
+              <Link
+                href="/videos"
+                className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
+              >
+                Visit Videos Page
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* ─── Instagram Feed ─── */}
+      <section className="bg-white py-24 lg:py-32">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
+              Follow Along
+            </p>
+            <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal mb-4">
+              @proclaimingpraise
+            </h2>
+            <a
+              href="https://www.instagram.com/proclaimingpraise"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-charcoal/50 hover:text-gold transition-colors text-sm"
+            >
+              <InstagramIcon className="w-4 h-4" />
+              Follow us on Instagram
+            </a>
+          </div>
+
+          {instagramPosts && instagramPosts.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+              {instagramPosts.map((post) => (
+                <a
+                  key={post.id}
+                  href={post.post_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-warm-gray"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.image_url}
+                    alt={post.caption ?? ""}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-deep-black/0 group-hover:bg-deep-black/60 transition-colors duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2 px-4 text-center">
+                      <InstagramIcon className="w-6 h-6 text-white" />
+                      {post.caption && (
+                        <p className="text-white text-xs leading-relaxed line-clamp-3">
+                          {post.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <a
+                  key={i}
+                  href="https://www.instagram.com/proclaimingpraise"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-warm-gray flex items-center justify-center hover:bg-warm-gray/70 transition-colors"
+                >
+                  <InstagramIcon className="w-8 h-8 text-charcoal/20 group-hover:text-gold/40 transition-colors" />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Praise Reports Preview ─── */}
+      {praiseReports && praiseReports.length > 0 && (
+        <section className="bg-warm-white py-24 lg:py-32">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <p className="text-gold tracking-[0.2em] uppercase text-sm font-medium mb-3">
+                Testimonies
+              </p>
+              <h2 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-charcoal">
+                Praise Reports
+              </h2>
+            </div>
+
+            <div className="max-w-5xl mx-auto">
+              <PraiseReportsGrid reports={praiseReports} />
+            </div>
+
+            <div className="text-center mt-12">
+              <Link
+                href="/praise-reports"
+                className="inline-flex items-center gap-2 text-gold font-semibold hover:gap-3 transition-all"
+              >
+                Read More Stories
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

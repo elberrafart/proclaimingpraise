@@ -3,8 +3,9 @@
 import { useState, useRef, useTransition } from "react";
 import { createEvent, updateEvent, deleteEvent } from "@/app/actions/events";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, Star, Upload, Link2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Upload, Link2, X, Share2 } from "lucide-react";
 import type { Event, RegistrationType } from "@/types/database";
+import { EventSharePanel } from "@/components/admin/EventSharePanel";
 
 // ---------------------------------------------------------------------------
 // Upload helper — runs in the browser, returns the public storage URL
@@ -322,6 +323,7 @@ function EventForm({
 export function EventsClient({ events }: { events: Event[] }) {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sharingEvent, setSharingEvent] = useState<Event | null>(null);
   const [isPending, startTransition] = useTransition();
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -406,6 +408,7 @@ export function EventsClient({ events }: { events: Event[] }) {
                 <th className="px-6 py-3 text-left">Date</th>
                 <th className="px-6 py-3 text-left">Location</th>
                 <th className="px-6 py-3 text-left">Featured</th>
+                <th className="px-6 py-3 text-right">Share</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -413,7 +416,7 @@ export function EventsClient({ events }: { events: Event[] }) {
               {events.map((event) =>
                 editingId === event.id ? (
                   <tr key={event.id}>
-                    <td colSpan={5} className="px-6 py-4">
+                    <td colSpan={6} className="px-6 py-4">
                       <EventForm
                         initial={{
                           title: event.title,
@@ -462,6 +465,17 @@ export function EventsClient({ events }: { events: Event[] }) {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 justify-end">
                         <button
+                          onClick={() => setSharingEvent(event)}
+                          className="p-1.5 text-charcoal/40 hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+                          title="Share / QR Code"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
                           onClick={() => setEditingId(event.id)}
                           className="p-1.5 text-charcoal/40 hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
                           title="Edit"
@@ -484,6 +498,14 @@ export function EventsClient({ events }: { events: Event[] }) {
           </table>
         )}
       </div>
+
+      {sharingEvent && (
+        <EventSharePanel
+          eventId={sharingEvent.id}
+          eventTitle={sharingEvent.title}
+          onClose={() => setSharingEvent(null)}
+        />
+      )}
     </div>
   );
 }

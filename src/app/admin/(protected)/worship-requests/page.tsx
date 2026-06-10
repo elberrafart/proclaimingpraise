@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateRequestStatus } from "@/app/actions/worship-requests";
+import { updateRequestStatus, deleteWorshipRequest } from "@/app/actions/worship-requests";
 import { formatEventDate, formatDate } from "@/lib/utils";
 import type { WorshipRequest } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect } from "react";
+import { Trash2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Status form — client component so the "Completed by" field can show/hide
@@ -83,6 +84,7 @@ function StatusBadge({ status }: { status: WorshipRequest["status"] }) {
 // ---------------------------------------------------------------------------
 export default function WorshipRequestsPage() {
   const [requests, setRequests] = useState<WorshipRequest[]>([]);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const supabase = createClient();
@@ -92,6 +94,14 @@ export default function WorshipRequestsPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => setRequests(data ?? []));
   }, []);
+
+  function handleDelete(id: string) {
+    if (!confirm("Delete this worship request? This cannot be undone.")) return;
+    startTransition(async () => {
+      await deleteWorshipRequest(id);
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+    });
+  }
 
   return (
     <div>
@@ -151,7 +161,17 @@ export default function WorshipRequestsPage() {
                   )}
                 </div>
 
-                <StatusForm request={r} />
+                  <div className="flex items-center gap-2">
+                    <StatusForm request={r} />
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      disabled={isPending}
+                      className="p-1.5 text-charcoal/30 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="Delete request"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
               </div>
             </div>
           ))}

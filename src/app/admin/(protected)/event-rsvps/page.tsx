@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { deleteRsvp } from "@/app/actions/event-rsvps";
 import { formatDate } from "@/lib/utils";
-import { Users, Trash2, CalendarDays } from "lucide-react";
+import { Users, Trash2, CalendarDays, Download } from "lucide-react";
 import type { EventRsvpRow, EventRow } from "@/types/database";
 
 export const metadata = { title: "Event RSVPs | Admin" };
@@ -40,11 +40,23 @@ export default async function EventRsvpsPage() {
             Attendees who registered for free events.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-xl">
-          <Users className="w-4 h-4 text-gold" />
-          <span className="text-sm font-semibold text-charcoal">
-            {totalCount} total
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-xl">
+            <Users className="w-4 h-4 text-gold" />
+            <span className="text-sm font-semibold text-charcoal">
+              {totalCount} total
+            </span>
+          </div>
+          {totalCount > 0 && (
+            <a
+              href="/api/admin/export-rsvps"
+              download
+              className="flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-xl hover:bg-charcoal/80 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download CSV
+            </a>
+          )}
         </div>
       </div>
 

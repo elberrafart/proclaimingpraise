@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Calendar, MapPin, Clock } from "lucide-react";
+import { EventRegistrationButton } from "@/components/EventRegistrationButton";
 
 export const metadata = {
   title: "Events | Proclaiming Praise",
@@ -88,14 +88,12 @@ export default async function EventsPage() {
                         {event.time}
                       </span>
                     </div>
-                    {event.featured && (
-                      <Link
-                        href="/contact"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
-                      >
-                        I&apos;ll Be There <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    )}
+                    <EventRegistrationButton
+                      eventId={event.id}
+                      eventTitle={event.title}
+                      registrationType={event.registration_type ?? "none"}
+                      registrationUrl={event.registration_url ?? null}
+                    />
                   </div>
                 </div>
               </div>

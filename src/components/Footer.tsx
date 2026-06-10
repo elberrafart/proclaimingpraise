@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Cross, Mail, MapPin } from "lucide-react";
-import { NewsletterForm } from "@/components/NewsletterForm";
+import { StayConnectedForm } from "@/components/StayConnectedForm";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -36,13 +36,13 @@ export function Footer() {
       <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 text-center">
           <h2 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl text-white mb-4">
-            Stay Connected with Upcoming Events
+            Stay Connected
           </h2>
           <p className="text-white/60 mb-8 max-w-lg mx-auto">
             Join our community and never miss a worship event, praise gathering,
             or opportunity to connect.
           </p>
-          <NewsletterForm />
+          <StayConnectedForm />
         </div>
       </div>
 

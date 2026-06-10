@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
       </p>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {stats.map(({ label, value, icon: Icon, href }) => (
           <a
             key={label}
@@ -83,7 +83,8 @@ export default async function AdminDashboard() {
             No requests yet.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead className="bg-warm-white text-charcoal/50 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3 text-left">Name</th>
@@ -129,6 +130,7 @@ export default async function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -42,9 +42,14 @@ export async function updateRequestStatus(
     .from("worship_requests")
     .update({
       status: status as "new" | "contacted" | "completed",
-      // Record who completed it; clear the field if status moves away from completed
       completed_by: status === "completed" ? (completedBy || null) : null,
     })
     .eq("id", id);
+  revalidatePath("/admin/worship-requests");
+}
+
+export async function deleteWorshipRequest(id: string) {
+  const supabase = await createClient();
+  await supabase.from("worship_requests").delete().eq("id", id);
   revalidatePath("/admin/worship-requests");
 }

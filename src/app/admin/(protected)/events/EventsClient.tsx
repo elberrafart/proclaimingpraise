@@ -4,7 +4,7 @@ import { useState, useRef, useTransition } from "react";
 import { createEvent, updateEvent, deleteEvent } from "@/app/actions/events";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Pencil, Trash2, Star, Upload, Link2, X } from "lucide-react";
-import type { Event } from "@/types/database";
+import type { Event, RegistrationType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
 // Upload helper — runs in the browser, returns the public storage URL
@@ -162,6 +162,8 @@ const emptyForm = {
   description: "",
   image_url: "",
   featured: false,
+  registration_type: "none" as RegistrationType,
+  registration_url: "",
 };
 
 function EventForm({
@@ -178,6 +180,7 @@ function EventForm({
   submitLabel: string;
 }) {
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [regType, setRegType] = useState<RegistrationType>(initial.registration_type);
 
   return (
     <form
@@ -250,6 +253,38 @@ function EventForm({
           className="w-full px-3 py-2.5 bg-warm-white border border-warm-gray rounded-xl text-sm text-charcoal focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold resize-none"
         />
       </div>
+      {/* Registration */}
+      <div className="sm:col-span-2">
+        <label className="block text-xs font-medium text-charcoal/60 mb-1">
+          Registration Type
+        </label>
+        <select
+          name="registration_type"
+          value={regType}
+          onChange={(e) => setRegType(e.target.value as RegistrationType)}
+          className="w-full px-3 py-2.5 bg-warm-white border border-warm-gray rounded-xl text-sm text-charcoal focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold"
+        >
+          <option value="none">None — walk-in, no RSVP needed</option>
+          <option value="free_rsvp">Free RSVP — collect name &amp; email</option>
+          <option value="paid">Paid — redirect to external link (Zeffy, etc.)</option>
+        </select>
+      </div>
+      {regType === "paid" && (
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-charcoal/60 mb-1">
+            Registration URL <span className="text-gold">*</span>
+          </label>
+          <input
+            name="registration_url"
+            type="url"
+            required
+            defaultValue={initial.registration_url ?? ""}
+            placeholder="https://www.zeffy.com/…"
+            className="w-full px-3 py-2.5 bg-warm-white border border-warm-gray rounded-xl text-sm text-charcoal focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold"
+          />
+        </div>
+      )}
+
       <div className="sm:col-span-2 flex items-center gap-3">
         <label className="flex items-center gap-2 cursor-pointer text-sm text-charcoal/70">
           <input
@@ -388,6 +423,8 @@ export function EventsClient({ events }: { events: Event[] }) {
                           description: event.description ?? "",
                           image_url: event.image_url ?? "",
                           featured: event.featured,
+                          registration_type: event.registration_type ?? "none",
+                          registration_url: event.registration_url ?? "",
                         }}
                         onSubmit={(fd, file) => handleUpdate(event.id, fd, file)}
                         onCancel={() => setEditingId(null)}

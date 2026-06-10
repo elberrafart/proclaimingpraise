@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 export async function createEvent(formData: FormData) {
   const supabase = await createClient();
+  const registrationType = (formData.get("registration_type") as string) || "none";
   const { error } = await supabase.from("events").insert({
     title: formData.get("title") as string,
     location: formData.get("location") as string,
@@ -13,6 +14,8 @@ export async function createEvent(formData: FormData) {
     description: formData.get("description") as string,
     image_url: (formData.get("image_url") as string) || null,
     featured: formData.get("featured") === "on",
+    registration_type: registrationType as "none" | "free_rsvp" | "paid",
+    registration_url: registrationType === "paid" ? (formData.get("registration_url") as string) || null : null,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/events");
@@ -21,6 +24,7 @@ export async function createEvent(formData: FormData) {
 
 export async function updateEvent(id: string, formData: FormData) {
   const supabase = await createClient();
+  const registrationType = (formData.get("registration_type") as string) || "none";
   const { error } = await supabase
     .from("events")
     .update({
@@ -31,6 +35,8 @@ export async function updateEvent(id: string, formData: FormData) {
       description: formData.get("description") as string,
       image_url: (formData.get("image_url") as string) || null,
       featured: formData.get("featured") === "on",
+      registration_type: registrationType as "none" | "free_rsvp" | "paid",
+      registration_url: registrationType === "paid" ? (formData.get("registration_url") as string) || null : null,
     })
     .eq("id", id);
   if (error) return { error: error.message };

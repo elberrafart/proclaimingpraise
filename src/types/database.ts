@@ -1,6 +1,8 @@
 // Supabase database type definitions — mirrors supabase/schema.sql exactly.
 // Import row types (Event, WorshipRequest, etc.) in components instead of defining inline types.
 
+export type RegistrationType = "none" | "free_rsvp" | "paid";
+
 export type EventRow = {
   id: string;
   title: string;
@@ -10,6 +12,16 @@ export type EventRow = {
   description: string | null;
   image_url: string | null;
   featured: boolean;
+  registration_type: RegistrationType;
+  registration_url: string | null;
+  created_at: string;
+};
+
+export type EventRsvpRow = {
+  id: string;
+  event_id: string;
+  name: string;
+  email: string;
   created_at: string;
 };
 
@@ -90,6 +102,8 @@ export type Database = {
           description?: string | null;
           image_url?: string | null;
           featured?: boolean;
+          registration_type?: RegistrationType;
+          registration_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -100,6 +114,23 @@ export type Database = {
           description?: string | null;
           image_url?: string | null;
           featured?: boolean;
+          registration_type?: RegistrationType;
+          registration_url?: string | null;
+        };
+        Relationships: [];
+      };
+      event_rsvps: {
+        Row: EventRsvpRow;
+        Insert: {
+          id?: string;
+          event_id: string;
+          name: string;
+          email: string;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          email?: string;
         };
         Relationships: [];
       };
@@ -238,3 +269,4 @@ export type NewsletterSubscriber = NewsletterSubscriberRow;
 export type PraiseReport = PraiseReportRow;
 export type VideoTestimony = VideoTestimonyRow;
 export type InstagramPost = InstagramPostRow;
+export type EventRsvp = EventRsvpRow;

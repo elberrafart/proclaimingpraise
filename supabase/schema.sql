@@ -16,6 +16,29 @@ create table if not exists events (
   created_at  timestamptz not null default now()
 );
 
+-- Event registration fields (added after initial schema)
+alter table events add column if not exists registration_type text not null default 'none'
+  check (registration_type in ('none', 'free_rsvp', 'paid'));
+alter table events add column if not exists registration_url text;
+
+-- Event RSVPs (for free events that require a headcount)
+create table if not exists event_rsvps (
+  id         uuid primary key default gen_random_uuid(),
+  event_id   uuid not null references events(id) on delete cascade,
+  name       text not null,
+  email      text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table event_rsvps enable row level security;
+
+drop policy if exists "Anyone insert event_rsvps" on event_rsvps;
+drop policy if exists "Auth read event_rsvps"     on event_rsvps;
+drop policy if exists "Auth delete event_rsvps"   on event_rsvps;
+create policy "Anyone insert event_rsvps" on event_rsvps for insert with check (true);
+create policy "Auth read event_rsvps"     on event_rsvps for select using (auth.role() = 'authenticated');
+create policy "Auth delete event_rsvps"   on event_rsvps for delete using (auth.role() = 'authenticated');
+
 -- Worship / Personal Praise Requests
 create table if not exists worship_requests (
   id          uuid primary key default gen_random_uuid(),

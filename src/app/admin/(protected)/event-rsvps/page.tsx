@@ -31,7 +31,7 @@ export default async function EventRsvpsPage() {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl text-charcoal mb-2">
             Event RSVPs
@@ -40,7 +40,7 @@ export default async function EventRsvpsPage() {
             Attendees who registered for free events.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-gold/10 rounded-xl">
             <Users className="w-4 h-4 text-gold" />
             <span className="text-sm font-semibold text-charcoal">
@@ -51,7 +51,7 @@ export default async function EventRsvpsPage() {
             <a
               href="/api/admin/export-rsvps"
               download
-              className="flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-xl hover:bg-charcoal/80 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-charcoal text-white text-sm font-medium rounded-xl hover:bg-charcoal/80 transition-colors whitespace-nowrap"
             >
               <Download className="w-4 h-4" />
               Download CSV
@@ -92,7 +92,8 @@ export default async function EventRsvpsPage() {
                 </div>
 
                 {/* RSVPs table */}
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[480px]">
                   <thead className="text-charcoal/40 text-xs uppercase tracking-wider">
                     <tr>
                       <th className="px-6 py-3 text-left">Name</th>
@@ -136,6 +137,7 @@ export default async function EventRsvpsPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             );
           })}

@@ -486,7 +486,8 @@ export function VideosClient({ videos }: { videos: VideoTestimony[] }) {
             No videos yet. Add your first one above.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-warm-white text-charcoal/50 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3 text-left">Video</th>
@@ -609,6 +610,7 @@ export function VideosClient({ videos }: { videos: VideoTestimony[] }) {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

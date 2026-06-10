@@ -401,7 +401,8 @@ export function EventsClient({ events }: { events: Event[] }) {
             No events yet. Add your first one above.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[680px]">
             <thead className="bg-warm-white text-charcoal/50 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-3 text-left">Title</th>
@@ -496,6 +497,7 @@ export function EventsClient({ events }: { events: Event[] }) {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

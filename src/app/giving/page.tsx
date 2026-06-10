@@ -56,7 +56,7 @@ export default function GivingPage() {
               <div className="rounded-2xl overflow-hidden border border-warm-gray">
                 <iframe
                   title="Donation form powered by Zeffy"
-                  src="https://www.zeffy.com/en-US/embed/donation-form/proclaiming-praise-donations-2026"
+                  src="https://www.zeffy.com/en-US/donation-form/proclaiming-praise-donations--2026"
                   style={{ width: "100%", minHeight: "700px", border: "none" }}
                   allow="payment"
                 />

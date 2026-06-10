@@ -59,13 +59,16 @@ create table if not exists worship_requests (
 );
 alter table worship_requests add column if not exists completed_by text;
 
--- Newsletter Subscribers
+-- Newsletter / Stay Connected Subscribers
 create table if not exists newsletter_subscribers (
   id         uuid primary key default gen_random_uuid(),
   email      text unique not null,
   status     text not null default 'active' check (status in ('active', 'unsubscribed')),
   created_at timestamptz not null default now()
 );
+alter table newsletter_subscribers add column if not exists name  text;
+alter table newsletter_subscribers add column if not exists city  text;
+alter table newsletter_subscribers add column if not exists phone text;
 
 -- Video Testimonies
 create table if not exists video_testimonies (

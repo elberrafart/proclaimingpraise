@@ -21,7 +21,7 @@ const navLinks = [
   { href: "/admin/events", label: "Events", icon: CalendarDays },
   { href: "/admin/event-rsvps", label: "Event RSVPs", icon: Users },
   { href: "/admin/worship-requests", label: "Worship Requests", icon: HeartHandshake },
-  { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
+  { href: "/admin/newsletter", label: "Stay Connected", icon: Mail },
   { href: "/admin/praise-reports", label: "Praise Reports", icon: Star },
   { href: "/admin/videos", label: "Videos", icon: Play },
   { href: "/admin/instagram", label: "Instagram", icon: InstagramIcon },

@@ -45,7 +45,10 @@ export type WorshipRequestRow = {
 
 export type NewsletterSubscriberRow = {
   id: string;
+  name: string | null;
   email: string;
+  city: string | null;
+  phone: string | null;
   status: "active" | "unsubscribed";
   created_at: string;
 };
@@ -174,12 +177,18 @@ export type Database = {
         Row: NewsletterSubscriberRow;
         Insert: {
           id?: string;
+          name?: string | null;
           email: string;
+          city?: string | null;
+          phone?: string | null;
           status?: "active" | "unsubscribed";
           created_at?: string;
         };
         Update: {
+          name?: string | null;
           email?: string;
+          city?: string | null;
+          phone?: string | null;
           status?: "active" | "unsubscribed";
         };
         Relationships: [];

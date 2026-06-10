@@ -19,3 +19,11 @@ export async function submitRsvp(
   if (error) return { error: error.message };
   return {};
 }
+
+export async function deleteRsvp(id: string) {
+  "use server";
+  const supabase = await createClient();
+  await supabase.from("event_rsvps").delete().eq("id", id);
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/admin/event-rsvps");
+}

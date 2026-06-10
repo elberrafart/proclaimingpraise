@@ -12,12 +12,14 @@ import {
   Star,
   Play,
   LogOut,
+  Users,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
 
 const navLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/events", label: "Events", icon: CalendarDays },
+  { href: "/admin/event-rsvps", label: "Event RSVPs", icon: Users },
   { href: "/admin/worship-requests", label: "Worship Requests", icon: HeartHandshake },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
   { href: "/admin/praise-reports", label: "Praise Reports", icon: Star },

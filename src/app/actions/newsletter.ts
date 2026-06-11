@@ -7,6 +7,8 @@ export async function subscribeNewsletter(
   _prevState: { error?: string; success?: boolean } | undefined,
   formData: FormData
 ) {
+  if (formData.get("website")) return { success: true };
+
   const name  = (formData.get("name")  as string)?.trim();
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const city  = (formData.get("city")  as string)?.trim();

@@ -5,8 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 export async function submitRsvp(
   eventId: string,
   name: string,
-  email: string
+  email: string,
+  honeypot = ""
 ): Promise<{ error?: string }> {
+  if (honeypot) return {};
   if (!name.trim() || !email.trim()) return { error: "Name and email are required." };
 
   const supabase = await createClient();

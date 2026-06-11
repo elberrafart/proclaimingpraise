@@ -116,6 +116,7 @@ export default function ContactPage() {
             action={action}
             className="bg-white rounded-3xl shadow-sm p-8 md:p-12 space-y-6"
           >
+            <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
             <div>
               <label className="block text-sm font-medium text-charcoal mb-2">
                 Name <span className="text-gold">*</span>

@@ -18,12 +18,23 @@ export const metadata: Metadata = {
   description:
     "Proclaiming Praise is a 501(c)(3) non-profit advancing the Kingdom of Heaven, one praise at a time. Join worship events, give online, and connect with our community.",
   keywords: ["worship", "praise", "non-profit", "faith", "community", "events"],
+  metadataBase: new URL("https://www.proclaimingpraise.org"),
   openGraph: {
     title: "Proclaiming Praise | Advancing the Kingdom of Heaven",
-    description:
-      "Advancing the Kingdom of Heaven, one praise at a time.",
+    description: "Advancing the Kingdom of Heaven, one praise at a time.",
     type: "website",
     url: "https://www.proclaimingpraise.org",
+    siteName: "Proclaiming Praise",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Proclaiming Praise | Advancing the Kingdom of Heaven",
+    description: "Advancing the Kingdom of Heaven, one praise at a time.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 

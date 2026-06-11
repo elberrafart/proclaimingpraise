@@ -44,9 +44,10 @@ export function EventRegistrationButton({
     const fd = new FormData(e.currentTarget);
     const name = fd.get("name") as string;
     const email = fd.get("email") as string;
+    const honeypot = fd.get("website") as string;
     setError(null);
     startTransition(async () => {
-      const result = await submitRsvp(eventId, name, email);
+      const result = await submitRsvp(eventId, name, email, honeypot);
       if (result.error) {
         setError(result.error);
       } else {
@@ -108,6 +109,7 @@ export function EventRegistrationButton({
                   {eventTitle}
                 </p>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
                   <div>
                     <label className="block text-xs font-medium text-charcoal/60 mb-1">
                       Your name <span className="text-gold">*</span>

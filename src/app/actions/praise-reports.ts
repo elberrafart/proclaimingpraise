@@ -8,6 +8,7 @@ export async function submitPraiseReport(
   _prevState: { error?: string; success?: boolean } | undefined,
   formData: FormData
 ) {
+  if (formData.get("website")) return { success: true };
   const supabase = await createClient();
   const { error } = await supabase.from("praise_reports").insert({
     quote: formData.get("quote") as string,

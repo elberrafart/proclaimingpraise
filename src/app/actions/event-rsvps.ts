@@ -28,7 +28,10 @@ export async function submitRsvp(
       .single(),
   ]);
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") return { error: "You're already registered for this event!" };
+    return { error: error.message };
+  }
 
   revalidatePath("/events");
   revalidatePath(`/events/${eventId}`);

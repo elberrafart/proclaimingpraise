@@ -27,7 +27,8 @@ create table if not exists event_rsvps (
   event_id   uuid not null references events(id) on delete cascade,
   name       text not null,
   email      text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique (event_id, email)
 );
 
 alter table event_rsvps enable row level security;

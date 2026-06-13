@@ -20,6 +20,7 @@ export async function createEvent(formData: FormData) {
   if (error) return { error: error.message };
   revalidatePath("/admin/events");
   revalidatePath("/events");
+  revalidatePath("/");
 }
 
 export async function updateEvent(id: string, formData: FormData) {
@@ -42,6 +43,8 @@ export async function updateEvent(id: string, formData: FormData) {
   if (error) return { error: error.message };
   revalidatePath("/admin/events");
   revalidatePath("/events");
+  revalidatePath(`/events/${id}`);
+  revalidatePath("/");
 }
 
 export async function deleteEvent(id: string) {
@@ -49,4 +52,5 @@ export async function deleteEvent(id: string) {
   await supabase.from("events").delete().eq("id", id);
   revalidatePath("/admin/events");
   revalidatePath("/events");
+  revalidatePath("/");
 }

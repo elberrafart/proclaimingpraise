@@ -1,29 +1,57 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sendRsvpEmails } from "@/lib/email";
 
 export async function submitRsvp(
   eventId: string,
   name: string,
-  email: string
+  email: string,
+  honeypot = ""
 ): Promise<{ error?: string }> {
+  if (honeypot) return {};
   if (!name.trim() || !email.trim()) return { error: "Name and email are required." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("event_rsvps").insert({
-    event_id: eventId,
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-  });
+
+  const [{ error }, { data: event }] = await Promise.all([
+    supabase.from("event_rsvps").insert({
+      event_id: eventId,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+    }),
+    supabase
+      .from("events")
+      .select("title, date, time, location")
+      .eq("id", eventId)
+      .single(),
+  ]);
 
   if (error) return { error: error.message };
+
+  revalidatePath("/events");
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/admin/event-rsvps");
+
+  void sendRsvpEmails({
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    eventId,
+    eventTitle:    event?.title    ?? "Upcoming Event",
+    eventDate:     event?.date     ?? undefined,
+    eventTime:     event?.time     ?? undefined,
+    eventLocation: event?.location ?? undefined,
+  });
+
   return {};
 }
 
-export async function deleteRsvp(id: string) {
+export async function deleteRsvp(id: string, eventId: string) {
   "use server";
   const supabase = await createClient();
   await supabase.from("event_rsvps").delete().eq("id", id);
-  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/events");
+  revalidatePath(`/events/${eventId}`);
   revalidatePath("/admin/event-rsvps");
 }

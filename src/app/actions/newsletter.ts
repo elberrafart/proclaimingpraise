@@ -2,11 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendNewsletterEmails } from "@/lib/email";
 
 export async function subscribeNewsletter(
   _prevState: { error?: string; success?: boolean } | undefined,
   formData: FormData
 ) {
+  if (formData.get("website")) return { success: true };
+
   const name  = (formData.get("name")  as string)?.trim();
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const city  = (formData.get("city")  as string)?.trim();
@@ -22,6 +25,9 @@ export async function subscribeNewsletter(
     .upsert({ name, email, city, phone, status: "active" }, { onConflict: "email" });
 
   if (error) return { error: "Something went wrong. Please try again." };
+
+  void sendNewsletterEmails({ name, email, city });
+
   return { success: true };
 }
 

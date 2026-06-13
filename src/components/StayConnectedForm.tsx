@@ -11,13 +11,13 @@ const STEPS = [
   { field: "phone", type: "tel",    label: "Best number to reach you? (optional)", placeholder: "Phone number",   required: false },
 ] as const;
 
-type Fields = { email: string; name: string; city: string; phone: string };
+type Fields = { email: string; name: string; city: string; phone: string; website: string };
 type Phase  = "idle" | "exit" | "enter";
 
 export function StayConnectedForm() {
   const [step,   setStep]   = useState(0);
   const [phase,  setPhase]  = useState<Phase>("idle");
-  const [values, setValues] = useState<Fields>({ email: "", name: "", city: "", phone: "" });
+  const [values, setValues] = useState<Fields>({ email: "", name: "", city: "", phone: "", website: "" });
   const [error,  setError]  = useState<string | null>(null);
   const [done,   setDone]   = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -51,6 +51,7 @@ export function StayConnectedForm() {
     if (isLast) {
       const fd = new FormData();
       (Object.entries(values) as [string, string][]).forEach(([k, v]) => fd.append(k, v));
+      fd.set("website", values.website);
       startTransition(async () => {
         const result = await subscribeNewsletter(undefined, fd);
         if (result?.error) setError(result.error);

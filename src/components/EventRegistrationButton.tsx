@@ -31,9 +31,10 @@ export function EventRegistrationButton({
         href={registrationUrl ?? "#"}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
+        className="group inline-flex items-center gap-2 px-7 py-3.5 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-colors duration-300 self-start shadow-lg shadow-gold/30 animate-button-bounce"
       >
-        Register <ArrowRight className="w-4 h-4" />
+        Register
+        <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
       </a>
     );
   }
@@ -44,9 +45,10 @@ export function EventRegistrationButton({
     const fd = new FormData(e.currentTarget);
     const name = fd.get("name") as string;
     const email = fd.get("email") as string;
+    const honeypot = fd.get("website") as string;
     setError(null);
     startTransition(async () => {
-      const result = await submitRsvp(eventId, name, email);
+      const result = await submitRsvp(eventId, name, email, honeypot);
       if (result.error) {
         setError(result.error);
       } else {
@@ -65,9 +67,10 @@ export function EventRegistrationButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-all hover:gap-3 self-start"
+        className="group inline-flex items-center gap-2 px-7 py-3.5 bg-gold text-deep-black font-semibold rounded-full hover:bg-gold-light transition-colors duration-300 self-start shadow-lg shadow-gold/30 animate-button-bounce"
       >
-        I&apos;ll Be There <ArrowRight className="w-4 h-4" />
+        I&apos;ll Be There
+        <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
       </button>
 
       {open && (
@@ -108,6 +111,7 @@ export function EventRegistrationButton({
                   {eventTitle}
                 </p>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
                   <div>
                     <label className="block text-xs font-medium text-charcoal/60 mb-1">
                       Your name <span className="text-gold">*</span>

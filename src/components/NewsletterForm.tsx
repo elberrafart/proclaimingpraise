@@ -18,6 +18,7 @@ export function NewsletterForm() {
 
   return (
     <form action={action} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+      <input type="text" name="website" className="hidden" tabIndex={-1} autoComplete="off" />
       <input
         type="email"
         name="email"

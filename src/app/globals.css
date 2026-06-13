@@ -68,6 +68,17 @@ body {
 .animation-delay-400 { animation-delay: 0.4s; }
 .animation-delay-600 { animation-delay: 0.6s; }
 
+@keyframes buttonBounce {
+  0%, 100% { transform: translateY(0); }
+  30%       { transform: translateY(-6px); }
+  60%       { transform: translateY(-3px); }
+  80%       { transform: translateY(-5px); }
+}
+
+.animate-button-bounce {
+  animation: buttonBounce 1.8s ease-in-out infinite;
+}
+
 /* Gradient text utility */
 .text-gradient-gold {
   background: linear-gradient(135deg, #c8a44e, #e4cc7a, #c8a44e);

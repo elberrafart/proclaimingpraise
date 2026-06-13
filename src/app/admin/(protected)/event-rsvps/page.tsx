@@ -121,7 +121,7 @@ export default async function EventRsvpsPage() {
                           <form
                             action={async () => {
                               "use server";
-                              await deleteRsvp(rsvp.id);
+                              await deleteRsvp(rsvp.id, rsvp.event_id);
                             }}
                           >
                             <button

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendPraiseReportNotification } from "@/lib/email";
 
 /** Public submission — always saved as unpublished until admin reviews. */
 export async function submitPraiseReport(
@@ -9,14 +10,19 @@ export async function submitPraiseReport(
   formData: FormData
 ) {
   if (formData.get("website")) return { success: true };
+
+  const quote = formData.get("quote") as string;
+  const name  = formData.get("name") as string;
+  const role  = (formData.get("role") as string) || "Community Member";
+
   const supabase = await createClient();
   const { error } = await supabase.from("praise_reports").insert({
-    quote: formData.get("quote") as string,
-    name: formData.get("name") as string,
-    role: (formData.get("role") as string) || "Community Member",
-    published: false,
+    quote, name, role, published: false,
   });
   if (error) return { error: "Something went wrong. Please try again." };
+
+  void sendPraiseReportNotification({ name, quote, role });
+
   return { success: true };
 }
 

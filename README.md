@@ -2,9 +2,9 @@
 
 Website and admin portal for [Proclaiming Praise](https://proclaimingpraise.org), a 501(c)(3) worship ministry based in Southern California.
 
-**Stack:** Next.js 16 · React 19 · Supabase (PostgreSQL + Auth + Storage) · Tailwind CSS v4
+**Stack:** Next.js 16 · React 19 · Supabase (PostgreSQL + Auth + Storage) · Tailwind CSS v4 · Resend (email)
 
-**Features:** Event registration (free RSVP / paid redirect) · Shareable event URLs with QR codes · Stay Connected community list with CSV export · Admin mobile-responsive with slide-in sidebar
+**Features:** Event registration (free RSVP / paid redirect) · Transactional email notifications via Resend · Shareable event URLs with QR codes · Stay Connected community list with CSV export · Spam protection (honeypot) on all public forms · Dynamic OG image · Sitemap + robots.txt · Admin mobile-responsive with slide-in sidebar
 
 ---
 
@@ -18,7 +18,7 @@ npm install
 
 ### 2. Set up environment variables
 
-Create a `.env.local` file in the project root with the following variables:
+Create a `.env.local` file in the project root. See `.env.local.example` for a template.
 
 ```env
 # Supabase — from your project Settings → API
@@ -31,9 +31,14 @@ INSTAGRAM_ACCESS_TOKEN=your-long-lived-token-here
 
 # Cron job auth — any random secret string (Vercel sets this automatically)
 CRON_SECRET=your-random-secret-here
+
+# Resend — transactional email (see "Email Notifications" section below)
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RESEND_FROM=Proclaiming Praise <noreply@proclaimingpraise.org>
+ADMIN_EMAIL=info@proclaimingpraise.org
 ```
 
-> **Never expose `SUPABASE_SERVICE_ROLE_KEY` or `CRON_SECRET` to the browser.** They are only referenced in server-side code.
+> **Never expose `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, or `RESEND_API_KEY` to the browser.** They are only referenced in server-side code.
 
 ### 3. Run the database schema
 
@@ -83,10 +88,10 @@ src/
 │   ├── actions/                   # Server actions — all database mutations
 │   │   ├── auth.ts                # login / logout
 │   │   ├── events.ts              # create / update / delete events
-│   │   ├── event-rsvps.ts         # submitRsvp / deleteRsvp
-│   │   ├── worship-requests.ts    # submit request / update status / delete
-│   │   ├── praise-reports.ts      # CRUD + public submit + toggle published
-│   │   ├── newsletter.ts          # subscribe (name/email/city/phone) / delete subscriber
+│   │   ├── event-rsvps.ts         # submitRsvp / deleteRsvp (+ email notifications)
+│   │   ├── worship-requests.ts    # submit request / update status / delete (+ email)
+│   │   ├── praise-reports.ts      # CRUD + public submit + toggle published (+ email)
+│   │   ├── newsletter.ts          # subscribe / delete subscriber (+ email)
 │   │   ├── videos.ts              # create / update / delete / toggle video testimonies
 │   │   └── instagram.ts           # CRUD + syncInstagramNow server action
 │   ├── admin/
@@ -113,8 +118,16 @@ src/
 │   ├── contact/                   # Worship request form
 │   ├── events/
 │   │   ├── page.tsx               # Public events listing
-│   │   └── [id]/page.tsx          # Shareable event detail page (used for QR links)
-│   └── giving/                    # Online giving (Zeffy embed)
+│   │   └── [id]/page.tsx          # Full-bleed hero event detail page (QR links land here)
+│   ├── giving/                    # Online giving (Zeffy embed)
+│   ├── privacy/page.tsx           # Privacy policy
+│   ├── opengraph-image.tsx        # Dynamic OG image (1200×630) via Next.js ImageResponse
+│   ├── sitemap.ts                 # Dynamic sitemap — pulls events + praise reports from DB
+│   ├── robots.ts                  # robots.txt — blocks /admin and /api from crawlers
+│   ├── not-found.tsx              # Branded 404 page
+│   ├── error.tsx                  # Branded error boundary page
+│   ├── globals.css                # Tailwind v4 theme tokens + animation utilities
+│   └── layout.tsx                 # Root layout — fonts, global metadata, ConditionalShell
 ├── components/
 │   ├── admin/
 │   │   ├── AdminSidebar.tsx       # Collapsible mobile sidebar (hamburger) + desktop sticky
@@ -122,10 +135,11 @@ src/
 │   ├── icons/
 │   │   └── InstagramIcon.tsx      # Custom SVG (not in lucide-react)
 │   ├── ConditionalShell.tsx       # Hides Navbar/Footer on all /admin/* routes
-│   ├── EventRegistrationButton.tsx# Handles none / free_rsvp / paid registration CTAs
+│   ├── EventRegistrationButton.tsx# Handles none / free_rsvp / paid CTAs; bouncing animation
 │   ├── StayConnectedForm.tsx      # Multi-step carousel form (email → name → city → phone)
 │   ├── VideoCarousel.tsx          # Client-side YouTube carousel with thumbnail strip
 │   ├── PraiseReportsGrid.tsx      # Shared praise report card grid
+│   ├── NewsletterForm.tsx         # Simple email-only newsletter subscribe form
 │   ├── Footer.tsx
 │   └── Navbar.tsx
 ├── lib/
@@ -133,10 +147,11 @@ src/
 │   │   ├── client.ts              # Browser Supabase client (typed)
 │   │   ├── server.ts              # Server/SSR Supabase client (typed)
 │   │   └── service.ts             # Service role client — bypasses RLS (server only)
+│   ├── email.ts                   # Resend client + branded HTML email templates
 │   ├── sync-instagram.ts          # Shared Instagram Graph API sync logic
 │   └── utils.ts                   # formatDate, formatEventDate, MONTHS
 ├── types/
-│   └── database.ts                # Full Database generic + row type aliases (incl. EventRsvpRow, RegistrationType)
+│   └── database.ts                # Full Database generic + row type aliases
 └── proxy.ts                       # Auth middleware — redirects /admin/* to login
 supabase/
 └── schema.sql                     # Idempotent schema: tables, RLS, storage, seeds
@@ -170,18 +185,79 @@ Protected by Supabase Auth. The `(protected)` route group applies an auth-checki
 |---|---|
 | `/` | Homepage — featured event, video carousel, Instagram grid, praise reports |
 | `/events` | All events from DB, featured first |
-| `/events/[id]` | Shareable event detail page — hero image, description, registration button; used for QR code links |
+| `/events/[id]` | Full-bleed hero event detail — image fills viewport, floating info card, bouncing register button |
 | `/videos` | All published video testimonies (YouTube grid) |
 | `/praise-reports` | All published praise reports |
-| `/praise-reports/submit` | Shareable form — anyone can submit a testimony (saved as unpublished draft) |
+| `/praise-reports/submit` | Public testimony submission form (saved as unpublished draft) |
 | `/contact` | Worship request form — lands in admin worship requests queue |
 | `/giving` | Online giving via Zeffy embed |
+| `/privacy` | Privacy policy |
+| `/sitemap.xml` | Auto-generated sitemap — static routes + dynamic event/praise report URLs |
+| `/robots.txt` | Allows all crawlers on `/`; blocks `/admin/` and `/api/` |
+
+---
+
+## Email Notifications
+
+All transactional email is handled by [Resend](https://resend.com) via `src/lib/email.ts`. Emails are sent **fire-and-forget** (`void`) — a slow or failed send never blocks the user's form response.
+
+### Emails sent
+
+| Trigger | Admin gets | User gets |
+|---|---|---|
+| Worship request submitted | New request with all details + link to admin | Confirmation with their request summary |
+| RSVP submitted | New RSVP with attendee name + event details | Confirmation with event card (title, date, time, location) |
+| Newsletter / Stay Connected signup | New subscriber with name + city | Welcome email with what to expect |
+| Praise report submitted | New report with quote for review | — *(no email captured on that form)* |
+
+### Setup
+
+1. Sign up at [resend.com](https://resend.com)
+2. Add `proclaimingpraise.org` under **Domains** and follow the DNS verification steps (~5 min)
+3. Create an API key under **API Keys**
+4. Set these environment variables:
+
+```env
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RESEND_FROM=Proclaiming Praise <noreply@proclaimingpraise.org>
+ADMIN_EMAIL=info@proclaimingpraise.org   # or any Gmail
+```
+
+> **Testing without domain verification:** Use `RESEND_FROM=onboarding@resend.dev` — Resend's built-in sender that works immediately without DNS setup. Switch to your own domain before going to production.
+
+> If `RESEND_API_KEY` is not set, email sends are silently skipped — the site continues to function normally.
+
+---
+
+## Spam Protection
+
+All public-facing forms use a **honeypot field** (`name="website"`, visually hidden). Bots that auto-fill forms will populate it; humans never see it. The server action checks the field on every submission and silently discards the request if it has a value.
+
+| Form | Honeypot in DOM | Server check |
+|---|---|---|
+| RSVP (EventRegistrationButton) | ✅ | ✅ |
+| Worship request (Contact page) | ✅ | ✅ |
+| Praise report submit | ✅ | ✅ |
+| Stay Connected (StayConnectedForm) | ✅ via React state | ✅ |
+| Newsletter (NewsletterForm) | ✅ | ✅ |
+
+---
+
+## SEO & Metadata
+
+| Feature | Implementation |
+|---|---|
+| Global metadata | `src/app/layout.tsx` — title, description, keywords, OpenGraph, Twitter card |
+| Dynamic OG image | `src/app/opengraph-image.tsx` — 1200×630 branded card generated at runtime via `ImageResponse` |
+| Per-event OG image | `src/app/events/[id]/page.tsx` `generateMetadata` — uses the event's own image |
+| Sitemap | `src/app/sitemap.ts` — static routes + live event and praise report URLs from Supabase |
+| Robots | `src/app/robots.ts` — crawl all public routes; block `/admin/` and `/api/` |
 
 ---
 
 ## Database
 
-Six tables in Supabase with Row Level Security:
+Seven tables in Supabase with Row Level Security:
 
 | Table | Public access | Admin access |
 |---|---|---|
@@ -193,7 +269,7 @@ Six tables in Supabase with Row Level Security:
 | `video_testimonies` | Read published | Full CRUD |
 | `instagram_posts` | Read published | Full CRUD |
 
-### Key columns added
+### Key columns
 
 - `events.registration_type` — `none | free_rsvp | paid` — controls the CTA shown on the public event page
 - `events.registration_url` — external URL (e.g. Zeffy) used when `registration_type = paid`
@@ -226,14 +302,6 @@ The homepage Instagram feed pulls from the `instagram_posts` table. Posts can be
 
 > **Token refresh:** Long-lived tokens expire after 60 days. You must generate a new one before expiry and update the env var in Vercel. Instagram will email you a reminder before expiry.
 
-### Environment variables for Instagram
-
-| Variable | Where to get it |
-|---|---|
-| `INSTAGRAM_ACCESS_TOKEN` | Meta Developer Console → Instagram Basic Display |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase project Settings → API → service_role key |
-| `CRON_SECRET` | Any random string — set the same value in Vercel project settings |
-
 ---
 
 ## Video Testimonies
@@ -250,33 +318,15 @@ The homepage carousel shows all published videos. The `/videos` page shows them 
 
 ---
 
-## Deployment
-
-Connect the GitHub repo to [Vercel](https://vercel.com) and set these environment variables in the Vercel project settings:
-
-```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-INSTAGRAM_ACCESS_TOKEN
-CRON_SECRET
-```
-
-Vercel automatically uses `CRON_SECRET` when invoking cron jobs — no extra configuration needed beyond setting the variable.
-
-No separate backend deployment needed — Next.js handles everything in one deployment.
-
----
-
 ## Event Registration Types
 
 Each event can have one of three registration types, set in the admin:
 
 | Type | CTA shown on public event page | Where data goes |
 |---|---|---|
-| `none` | No button — walk-in event | — |
-| `free_rsvp` | "I'll Be There" → RSVP modal (name + email) | `event_rsvps` table, viewable at `/admin/event-rsvps` |
-| `paid` | "Get Tickets" → opens `registration_url` in new tab | External (Zeffy, Eventbrite, etc.) |
+| `none` | No button — walk-in note shown instead | — |
+| `free_rsvp` | "I'll Be There" → RSVP modal (name + email) | `event_rsvps` table; admin + attendee get confirmation emails |
+| `paid` | "Register" → opens `registration_url` in new tab | External (Zeffy, Eventbrite, etc.) |
 
 ### Shareable event URLs & QR codes
 
@@ -296,7 +346,28 @@ The public homepage form captures community members in a 4-step carousel:
 3. City
 4. Phone number (optional)
 
-Each step animates only the input — the button stays fixed. Submissions land in `newsletter_subscribers`. The admin view at `/admin/newsletter` includes live search and a CSV download.
+Each step animates only the input — the button stays fixed. Submissions land in `newsletter_subscribers`. The admin view at `/admin/newsletter` includes live search and a CSV download. A welcome email is sent to the subscriber and an admin notification is sent to `ADMIN_EMAIL`.
+
+---
+
+## Deployment
+
+Connect the GitHub repo to [Vercel](https://vercel.com) and set these environment variables in the Vercel project settings:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+INSTAGRAM_ACCESS_TOKEN
+CRON_SECRET
+RESEND_API_KEY
+RESEND_FROM
+ADMIN_EMAIL
+```
+
+Vercel automatically uses `CRON_SECRET` when invoking cron jobs — no extra configuration needed beyond setting the variable.
+
+No separate backend deployment needed — Next.js handles everything in one deployment.
 
 ---
 
@@ -304,6 +375,9 @@ Each step animates only the input — the button stays fixed. Submissions land i
 
 | # | Task | Priority | Notes |
 |---|---|---|---|
-| 1 | **Supabase keep-alive** | High | Free tier pauses after 7 days of inactivity. Set up a cron job on [cron-job.org](https://cron-job.org) (free) to ping the live site URL every 3 days, keeping the DB active. Alternatively, add a `/api/keep-alive` route that runs a lightweight query and point the cron at that endpoint. Consider upgrading to Supabase Pro ($25/mo) if this becomes a recurring issue in production. |
-| 2 | **Fill `SUPABASE_SERVICE_ROLE_KEY`** | High | Currently empty in `.env.local`. Needed for server-side admin operations. Get it from Supabase project → Settings → API → service_role key. |
-| 3 | **Zeffy webhook integration** | Medium | Donation form iframe is live at `/giving`. Next step: set up Zeffy webhooks to push donation events into Supabase so records are stored locally. Also connect paid event registration: when a Zeffy order completes for an event, write to `event_rsvps` so the admin sees a unified attendee list. |
+| 1 | **Supabase keep-alive** | High | Free tier pauses after 7 days of inactivity. Set up a cron job on [cron-job.org](https://cron-job.org) (free) to ping the live site URL every 3 days. Or upgrade to Supabase Pro ($25/mo). |
+| 2 | **Fill all Vercel env vars** | High | `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_EMAIL`, `CRON_SECRET`. |
+| 3 | **Verify sending domain in Resend** | High | Add DNS records for `proclaimingpraise.org` in the Resend dashboard before going live so emails come from `noreply@proclaimingpraise.org` instead of `onboarding@resend.dev`. |
+| 4 | **Zeffy webhook integration** | Medium | Donation form iframe is live at `/giving`. Next step: set up Zeffy webhooks to push donation events into Supabase so records are stored locally. Also connect paid event registration: when a Zeffy order completes for an event, write to `event_rsvps` so the admin sees a unified attendee list. |
+| 5 | **Instagram token auto-refresh** | Low | Long-lived tokens expire after 60 days. Add a cron job to refresh automatically. |
+| 6 | **Analytics** | Low | Enable Vercel Analytics in the Vercel dashboard — no code changes needed. |

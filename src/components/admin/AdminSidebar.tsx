@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
@@ -33,9 +33,6 @@ const navLinks = [
 export function AdminSidebar({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-
-  // Close drawer on navigation
-  useEffect(() => { setOpen(false); }, [pathname]);
 
   function isActive(href: string, exact?: boolean) {
     return exact ? pathname === href : pathname.startsWith(href);
@@ -111,6 +108,7 @@ export function AdminSidebar({ email }: { email: string }) {
             <Link
               key={href}
               href={href}
+              onClick={() => setOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 isActive(href, exact)
                   ? "bg-gold/10 text-gold"

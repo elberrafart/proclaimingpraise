@@ -97,7 +97,7 @@ export default function TermsPage() {
             <div>
               <h2 className="font-[family-name:var(--font-display)] text-2xl text-charcoal mb-3">Disclaimer of Warranties</h2>
               <p className="text-charcoal/70 leading-relaxed">
-                This website is provided "as is" without warranties of any kind, express or implied. We do not guarantee that the site will be uninterrupted, error-free, or free of viruses. Your use of the site is at your own risk.
+                This website is provided &ldquo;as is&rdquo; without warranties of any kind, express or implied. We do not guarantee that the site will be uninterrupted, error-free, or free of viruses. Your use of the site is at your own risk.
               </p>
             </div>
 

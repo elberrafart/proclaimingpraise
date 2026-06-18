@@ -363,7 +363,10 @@ export function EventsClient({ events }: { events: Event[] }) {
 
   function handleDelete(id: string) {
     if (!confirm("Delete this event?")) return;
-    startTransition(() => deleteEvent(id));
+    startTransition(async () => {
+      const result = await deleteEvent(id);
+      if (result?.error) setUploadError(result.error);
+    });
   }
 
   return (

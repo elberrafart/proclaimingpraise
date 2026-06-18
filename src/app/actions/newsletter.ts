@@ -15,16 +15,23 @@ export async function subscribeNewsletter(
   const city  = (formData.get("city")  as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim() || null;
 
-  if (!name)  return { error: "Please enter your name." };
-  if (!email) return { error: "Please enter a valid email." };
-  if (!city)  return { error: "Please enter your city." };
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!name)               return { error: "Please enter your name." };
+  if (!email)              return { error: "Please enter a valid email." };
+  if (!EMAIL_RE.test(email)) return { error: "Please enter a valid email." };
+  if (!city)               return { error: "Please enter your city." };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("newsletter_subscribers")
-    .upsert({ name, email, city, phone, status: "active" }, { onConflict: "email" });
+    .insert({ name, email, city, phone, status: "active" });
 
-  if (error) return { error: "Something went wrong. Please try again." };
+  if (error) {
+    // 23505 = unique_violation — email already subscribed, treat as success
+    if (error.code === "23505") return { success: true };
+    return { error: "Something went wrong. Please try again." };
+  }
 
   void sendNewsletterEmails({ name, email, city });
 

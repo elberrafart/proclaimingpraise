@@ -223,8 +223,6 @@ RESEND_FROM=Proclaiming Praise <noreply@proclaimingpraise.org>
 ADMIN_EMAIL=info@proclaimingpraise.org   # or any Gmail
 ```
 
-> **Testing without domain verification:** Use `RESEND_FROM=onboarding@resend.dev` — Resend's built-in sender that works immediately without DNS setup. Switch to your own domain before going to production.
-
 > If `RESEND_API_KEY` is not set, email sends are silently skipped — the site continues to function normally.
 
 ---
@@ -369,15 +367,3 @@ Vercel automatically uses `CRON_SECRET` when invoking cron jobs — no extra con
 
 No separate backend deployment needed — Next.js handles everything in one deployment.
 
----
-
-## To-Do
-
-| # | Task | Priority | Notes |
-|---|---|---|---|
-| 1 | **Supabase keep-alive** | High | Free tier pauses after 7 days of inactivity. Set up a cron job on [cron-job.org](https://cron-job.org) (free) to ping the live site URL every 3 days. Or upgrade to Supabase Pro ($25/mo). |
-| 2 | **Fill all Vercel env vars** | High | `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM`, `ADMIN_EMAIL`, `CRON_SECRET`. |
-| 3 | **Verify sending domain in Resend** | High | Add DNS records for `proclaimingpraise.org` in the Resend dashboard before going live so emails come from `noreply@proclaimingpraise.org` instead of `onboarding@resend.dev`. |
-| 4 | **Zeffy webhook integration** | Medium | Donation form iframe is live at `/giving`. Next step: set up Zeffy webhooks to push donation events into Supabase so records are stored locally. Also connect paid event registration: when a Zeffy order completes for an event, write to `event_rsvps` so the admin sees a unified attendee list. |
-| 5 | **Instagram token auto-refresh** | Low | Long-lived tokens expire after 60 days. Add a cron job to refresh automatically. |
-| 6 | **Analytics** | Low | Enable Vercel Analytics in the Vercel dashboard — no code changes needed. |

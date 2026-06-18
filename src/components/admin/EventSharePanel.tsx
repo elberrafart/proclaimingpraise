@@ -62,6 +62,7 @@ export function EventSharePanel({ eventId, eventTitle, onClose }: Props) {
         {/* QR Code */}
         <div className="flex justify-center mb-6">
           {qrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={qrDataUrl}
               alt="QR code"

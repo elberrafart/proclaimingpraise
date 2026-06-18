@@ -31,7 +31,7 @@ export default async function VideosPage() {
 
   // Filter by show_on_videos when the column exists;
   // fall back to all published videos if the DB migration hasn't been run yet.
-  let { data: videos, error } = await supabase
+  const primary = await supabase
     .from("video_testimonies")
     .select("*")
     .eq("published", true)
@@ -39,13 +39,15 @@ export default async function VideosPage() {
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
-  if (error) {
-    ({ data: videos } = await supabase
+  let videos = primary.data;
+  if (primary.error) {
+    const fallback = await supabase
       .from("video_testimonies")
       .select("*")
       .eq("published", true)
       .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false }));
+      .order("created_at", { ascending: false });
+    videos = fallback.data;
   }
 
   return (

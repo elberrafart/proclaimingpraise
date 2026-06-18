@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { subscribeNewsletter } from "@/app/actions/newsletter";
 import { CheckCircle, ArrowRight } from "lucide-react";
 
@@ -21,6 +21,16 @@ export function StayConnectedForm() {
   const [error,  setError]  = useState<string | null>(null);
   const [done,   setDone]   = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const inputRef     = useRef<HTMLInputElement>(null);
+  const isFirstMount = useRef(true);
+
+  // Focus the input whenever the step advances, but never on the initial page load
+  // (autoFocus would scroll the footer into view on every page)
+  useEffect(() => {
+    if (isFirstMount.current) { isFirstMount.current = false; return; }
+    inputRef.current?.focus();
+  }, [step]);
 
   const current = STEPS[step];
   const isLast  = step === STEPS.length - 1;
@@ -92,13 +102,13 @@ export function StayConnectedForm() {
         <div className="flex-1 overflow-hidden">
           <div style={inputStyle}>
             <input
+              ref={inputRef}
               key={step}
               type={current.type}
               value={values[current.field]}
               onChange={(e) => setValues((v) => ({ ...v, [current.field]: e.target.value }))}
               onKeyDown={handleKeyDown}
               placeholder={current.placeholder}
-              autoFocus
               className="w-full px-5 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
             />
           </div>

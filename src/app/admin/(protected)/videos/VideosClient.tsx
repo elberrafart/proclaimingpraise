@@ -8,7 +8,7 @@ import {
   toggleVideoPublished,
 } from "@/app/actions/videos";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Play, Upload, Link2, X, Image, Home, MonitorPlay } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Play, Upload, Link2, X, Image as ImageIcon, Home, MonitorPlay } from "lucide-react";
 import type { VideoTestimony } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -136,7 +136,7 @@ function FileOrUrlInput({
             )
           ) : (
             previewType === "image" ? (
-              <Image className="w-5 h-5 text-charcoal/20" />
+              <ImageIcon className="w-5 h-5 text-charcoal/20" />
             ) : (
               <Play className="w-5 h-5 text-charcoal/20" />
             )

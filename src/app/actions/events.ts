@@ -49,7 +49,8 @@ export async function updateEvent(id: string, formData: FormData) {
 
 export async function deleteEvent(id: string) {
   const supabase = await createClient();
-  await supabase.from("events").delete().eq("id", id);
+  const { error } = await supabase.from("events").delete().eq("id", id);
+  if (error) return { error: error.message };
   revalidatePath("/admin/events");
   revalidatePath("/events");
   revalidatePath("/");

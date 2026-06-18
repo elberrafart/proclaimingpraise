@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendRsvpEmails } from "@/lib/email";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function submitRsvp(
   eventId: string,
   name: string,
@@ -12,6 +14,7 @@ export async function submitRsvp(
 ): Promise<{ error?: string }> {
   if (honeypot) return {};
   if (!name.trim() || !email.trim()) return { error: "Name and email are required." };
+  if (!EMAIL_RE.test(email.trim())) return { error: "Please enter a valid email address." };
 
   const supabase = await createClient();
 
@@ -51,7 +54,6 @@ export async function submitRsvp(
 }
 
 export async function deleteRsvp(id: string, eventId: string) {
-  "use server";
   const supabase = await createClient();
   await supabase.from("event_rsvps").delete().eq("id", id);
   revalidatePath("/events");

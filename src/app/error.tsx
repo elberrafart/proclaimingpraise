@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Cross } from "lucide-react";
 
 export default function Error({
@@ -33,12 +34,12 @@ export default function Error({
         >
           Try again
         </button>
-        <a
+        <Link
           href="/"
           className="px-6 py-3 border border-warm-gray text-charcoal/60 text-sm font-medium rounded-full hover:border-charcoal/30 transition-colors"
         >
           Go home
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -46,6 +46,9 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
   // or tap (mobile). Managed via pointer events so both inputs work the same.
   const [titleVisible, setTitleVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Track whether the last interaction was touch to avoid double-firing
+  // (browsers fire both touch and mouse events on some devices).
+  const lastWasTouch = useRef(false);
 
   const validVideos = videos.filter((v) => v.video_url);
   if (!validVideos.length) return null;
@@ -75,9 +78,6 @@ export function VideoCarousel({ videos }: { videos: VideoTestimony[] }) {
 
   // Desktop: show on mouse enter, hide on mouse leave.
   // Mobile: tap anywhere on the carousel toggles the title.
-  // We track whether the last interaction was touch to avoid double-firing
-  // (browsers fire both touch and mouse events on some devices).
-  const lastWasTouch = useRef(false);
 
   function handleMouseEnter() {
     if (lastWasTouch.current) return;

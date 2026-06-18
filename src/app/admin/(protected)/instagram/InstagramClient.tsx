@@ -9,7 +9,7 @@ import {
   syncInstagramNow,
 } from "@/app/actions/instagram";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, Upload, Link2, X, Image } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, RefreshCw, Upload, Link2, X, Image as ImageIcon } from "lucide-react";
 import { InstagramIcon } from "@/components/icons/InstagramIcon";
 import type { InstagramPost } from "@/types/database";
 
@@ -118,7 +118,7 @@ function FileOrUrlInput({
               )}
             </>
           ) : (
-            <Image className="w-5 h-5 text-charcoal/20" />
+            <ImageIcon className="w-5 h-5 text-charcoal/20" />
           )}
         </div>
 

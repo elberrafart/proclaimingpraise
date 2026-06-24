@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { subscribeNewsletter } from "@/app/actions/newsletter";
 import { CheckCircle, ArrowRight } from "lucide-react";
 
@@ -21,6 +21,8 @@ export function StayConnectedForm() {
   const [error,  setError]  = useState<string | null>(null);
   const [done,   setDone]   = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [started, setStarted] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const current = STEPS[step];
   const isLast  = step === STEPS.length - 1;
@@ -65,7 +67,10 @@ export function StayConnectedForm() {
     setTimeout(() => {
       setStep((s) => s + 1);
       setPhase("enter");
-      setTimeout(() => setPhase("idle"), 30);
+      setTimeout(() => {
+        setPhase("idle");
+        if (started) inputRef.current?.focus({ preventScroll: true });
+      }, 30);
     }, 180);
   }
 
@@ -92,13 +97,14 @@ export function StayConnectedForm() {
         <div className="flex-1 overflow-hidden">
           <div style={inputStyle}>
             <input
+              ref={inputRef}
               key={step}
               type={current.type}
               value={values[current.field]}
               onChange={(e) => setValues((v) => ({ ...v, [current.field]: e.target.value }))}
               onKeyDown={handleKeyDown}
+              onFocus={() => setStarted(true)}
               placeholder={current.placeholder}
-              autoFocus
               className="w-full px-5 py-3 bg-white/10 border border-white/20 rounded-full text-white placeholder:text-white/40 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
             />
           </div>
